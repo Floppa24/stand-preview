@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stand Arrow System</title>
+<meta name="description" content="Playable preview of the Stand Arrow System for The Hideout World.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0c0916;color:#e8e4dc;font:13px 'DM Mono',ui-monospace,monospace}
+  #view{position:fixed;inset:0}
+  body.ts #view{filter:grayscale(.9) contrast(1.15) sepia(.2)}
+  #panel{position:fixed;top:14px;left:14px;width:min(300px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto;z-index:20;
+    background:rgba(14,11,22,.9);border:1px solid #3a2e5a;border-radius:14px;padding:14px 14px 12px;backdrop-filter:blur(8px)}
+  #panel h1{margin:0;font:700 1.55rem 'Cormorant Garamond',Georgia,serif;font-style:italic;color:#ffe27a;line-height:1.1}
+  #panel .sub{color:#9a94a8;font-size:.72rem;margin:4px 0 10px;line-height:1.5}
+  #panel .lbl{margin:12px 0 6px;font-size:.62rem;letter-spacing:.28em;color:#8a84a0}
+  #panel button{font:inherit;color:#e8e4dc;background:#1e1830;border:1px solid #3a2e5a;border-radius:8px;padding:7px 9px;cursor:pointer;text-align:left}
+  #panel button:hover{border-color:#ffd34d}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #stands button{border-left:3px solid var(--c);font:600 .95rem 'Cormorant Garamond',Georgia,serif}
+  #stands small{display:block;font:400 .6rem 'DM Mono',monospace;color:#8a84a0;letter-spacing:.1em}
+  .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.72rem;color:#c9c4d6}
+  kbd{background:#18181f;border:1px solid #2a2a34;border-radius:4px;padding:1px 6px;color:#c9a84c;font:inherit;text-align:center}
+  #panel .fine{margin-top:12px;font-size:.62rem;color:#6e6884;line-height:1.5}
+  #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-8px);z-index:40;max-width:min(560px,calc(100vw - 340px));
+    background:rgba(17,17,22,.88);border:1px solid #2a2a34;border-radius:10px;padding:8px 14px;opacity:0;transition:.25s;pointer-events:none}
+  #toast.on{opacity:1;transform:translateX(-50%)}
+  #near{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:15;display:none;background:rgba(17,17,22,.8);border-radius:10px;padding:6px 12px}
+  #hide{position:fixed;top:14px;right:14px;z-index:21}
+  @media (max-width:720px){#toast{max-width:calc(100vw - 28px);top:auto;bottom:16px}#panel{max-height:46vh}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head><body>
+<div id="view"></div>
+<div id="panel">
+  <h1>🏹 Stand Arrow System</h1>
+  <div class="sub">A playable preview for <b>The Hideout</b> World. This is the real Stand code from <code>world.html</code>, running on stand-in shapes instead of the full town. Nothing here is saved anywhere but your browser.</div>
+  <div class="lbl">CONTROLS</div>
+  <div class="keys">
+    <kbd>WASD</kbd><span>walk · drag to turn · scroll to zoom</span>
+    <kbd>E</kbd><span>gather a berry bush (Arrow Fragments)</span>
+    <kbd>Q</kbd><span>hold to pierce yourself · tap to summon</span>
+    <kbd>R</kbd><span>your Stand's move</span>
+    <kbd>K</kbd><span>Stand card: level up, items, Stands found</span>
+    <kbd>V</kbd><span>make the orange friend use their Stand</span>
+  </div>
+  <div class="lbl">SKIP AHEAD</div>
+  <div class="grid">
+    <button data-do="arrows">🏹 +3 arrows</button>
+    <button data-do="ess">✨ +20 Essence</button>
+    <button data-do="rain">☔ Arrow rain</button>
+    <button data-do="reset">↺ Start over</button>
+  </div>
+  <div class="lbl">TRY A STAND</div>
+  <div class="grid" id="stands"></div>
+  <div class="fine">In the game: fragments drop from the town's 10 berry bushes, Essence comes from fishing and the arcade (40 a day), and other players see your Stand. Odds: Common 55% · Rare 32% · Legendary 13%, with a Rare guaranteed every 10 rolls and a Legendary every 40.</div>
+</div>
+<div id="toast"></div>
+<div id="near">Press <kbd>E</kbd> to gather</div>
+<script type="module">
+import * as THREE from 'three';
+const currentUser = 'demo', isAdmin = false;
+const db = {};
+const doc = (...p) => ({ p });
+const collection = () => '';
+const updateDoc = () => Promise.resolve();          // the demo saves to this browser only
+const addDoc = () => Promise.resolve();
+const onSnapshot = () => {};
+const runTransaction = async () => {};
+const deleteField = () => null;
+let toastT = 0;
+const showToast = (m) => { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); };
+let lastPresenceSig = '', lastSync = 0, myChatMsg = '', myChatSentAt = 0, catalogOpen = false, camZoom = 4, yaw = 0;
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+let _ac = null; function domAudio() { try { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume(); return _ac; } catch (e) { return null; } }
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8fb8e0); scene.fog = new THREE.Fog(0x8fb8e0, 40, 140);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x4a5a3a, 2.1));
+const sun = new THREE.DirectionalLight(0xfff2dd, 1.6); sun.position.set(8, 14, 6); scene.add(sun);
+function makeCanvasTexture(size, draw) { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+const FW_MAX = 5000, fwParts = [];
+function fwBurst(x, y, z, n, rgb, speed = 11, life = 1.7) { for (let i = 0; i < n && fwParts.length < FW_MAX; i++) { const u = Math.random() * 2 - 1, th = Math.random() * 6.283, r = Math.sqrt(1 - u * u), sp = speed * (0.75 + Math.random() * 0.35), l = life * (0.7 + Math.random() * 0.5); fwParts.push({ x, y, z, vx: r * Math.cos(th) * sp, vy: u * sp, vz: r * Math.sin(th) * sp, r: rgb[0], g: rgb[1], b: rgb[2], life: l, max: l }); } }
+const fwRockets = []; function fwRocket(x, z, delay) { fwRockets.push({ x, y: 0.5, z, vy: 26 + Math.random() * 6, t: -delay, fuse: 1.1 + Math.random() * 0.4 }); }
+const TS = { on: false, held: false, readyAt: 0 }, DOM = { caught: false };
+// Za Warudo stand-in: the real one freezes everyone else; here the world goes grey for a few seconds.
+function tsTry() { if (TS.on || performance.now() < TS.readyAt) { if (!TS.on) showToast('Za Warudo needs ' + Math.ceil((TS.readyAt - performance.now()) / 1000) + 's to recharge.'); return; } TS.on = true; TS.readyAt = performance.now() + 24000; document.body.classList.add('ts'); showToast('ZA WARUDO! Toki wo tomare. (In the game, everyone else freezes.)'); setTimeout(tsEnd, 5000); }
+function tsEnd() { TS.on = false; document.body.classList.remove('ts'); }
+function abilityAllowed() { return false; }
+function bbOutdoors() { return true; }
+const localPos = new THREE.Vector3(0, 0, 0);
+const keys = new Set();
+const ADM = { st: false, stCard: false, stReel: false };
+function syncLookHint() {}
+const remoteAvatars = {};
+const OUTDOOR_BOUNDS = { xMin: -60, xMax: 60, zMin: -60, zMax: 60 };
+function collidesOutdoor() { return false; }
+const FX = { arrowRain: null };
+const admIn = {}; function admInput() { return ''; } function admDo(p) { return p; } function admWrite() {} function admId() { return 'r' + Date.now(); }
+
+// ══ STAND ARROW SYSTEM (Q / R / K) ══════════════════════════════════════════
+// The first version of "Stand Arrow System" from the vault (Claudes thingy/
+// Stand Arrow System (1).md): gather berry bushes for Arrow Fragments, 5 make a
+// Stone Arrow, hold Q to pierce yourself, a reel rolls your Stand, then Q
+// summons it and R fires its move. Fishing and arcade runs pay Stand Essence,
+// which levels it 1-10 (shorter cooldown, bigger aura). K opens the Stand card.
+//
+// Everything a Stand does is cosmetic or only touches you — no move can push,
+// hurt or hold anyone else (The World's time stop is the existing Za Warudo,
+// with its own rules and immunity).
+//
+// Saved as one `stand` map on users/{you}. That field has to be in the rules'
+// selfPrefFields list; until it is, the write is refused and progress lives in
+// this browser's localStorage (always mirrored there anyway).
+// Others see your Stand through two presence fields: sd = 'id.level' while it's
+// out, sm = when you last used its move (so they play the effect too).
+// Admins get a 🏹 Stands tab: give anyone a Stand, and arrow rain (config/worldfx
+// → arrowRain: 12 arrows around the admin for 3 min, each one once per player).
+const ST_RARITY = {
+  common: { name: 'Common', col: '#c7cfd9' },
+  rare: { name: 'Rare', col: '#5aa8ff' },
+  legendary: { name: 'Legendary', col: '#ffb534' },
+};
+// The note's 55 / 32 / 11 / 2: there are no Mythic Stands yet, so Mythic's 2% goes to Legendary.
+const ST_ODDS = [['common', 0.55], ['rare', 0.32], ['legendary', 0.13]];
+const ST_PITY_RARE = 10, ST_PITY_LEG = 40;   // a Rare or better at least every 10 rolls, a Legendary every 40
+const ST_PARTS = { 3: 'Part 3 · Stardust Crusaders', 4: 'Part 4 · Diamond is Unbreakable', 5: 'Part 5 · Golden Wind' };
+const STANDS = [
+  { id: 'mr', name: "Magician's Red", rar: 'common', part: 3, col: 0xff4a1c, acc: 0xffb347, extra: 'beak', st: 'B/B/C/B', move: 'Crossfire Hurricane', blurb: 'A fire-bird loops over your head, raining embers.', cd: 9000, dur: 3.2 },
+  { id: 'hg', name: 'Hierophant Green', rar: 'common', part: 3, col: 0x2fd67a, acc: 0xc8ffe0, extra: 'stripes', st: 'C/B/A/B', move: 'Emerald Splash', blurb: 'A spray of glowing emeralds bursts out in front of you.', cd: 7000, dur: 1.0 },
+  { id: 'sp', name: 'Star Platinum', rar: 'rare', part: 3, col: 0x7a5cff, acc: 0xffd36a, extra: 'band', st: 'A/A/C/A', move: 'ORA Rush', blurb: 'A blur of fists, and a burst of speed for you.', cd: 10000, dur: 2.2 },
+  { id: 'ge', name: 'Gold Experience', rar: 'rare', part: 5, col: 0xffcf3a, acc: 0x3fc46a, extra: 'ladybugs', st: 'C/A/E/D', move: 'Life Giver', blurb: 'Flowers spring up all around you.', cd: 12000, dur: 1.2 },
+  { id: 'kq', name: 'Killer Queen', rar: 'rare', part: 4, col: 0xff79c6, acc: 0xffffff, extra: 'ears', st: 'A/B/D/B', move: 'First Bomb', blurb: 'Touches the ground ahead. Then it goes off as fireworks.', cd: 10000, dur: 1.6 },
+  { id: 'tw', name: 'The World', rar: 'legendary', part: 3, col: 0xffc83a, acc: 0x37d18b, extra: 'crest', st: 'A/A/C/A', move: 'Za Warudo', blurb: 'Stops time. While The World is out, Z and R both cast Za Warudo.', cd: 0, dur: 1.4 },
+];
+const ST_BY = Object.fromEntries(STANDS.map((s) => [s.id, s]));
+const ST_FRAGS = 5, ST_FRAG_CHANCE = 0.4, ST_MAX_LV = 10, ST_ESS_CAP = 40;   // Essence: 40 a day at most
+const ST_HOLD_MS = 1300, ST_RAIN_MS = 180000, ST_RAIN_N = 12;
+const stCost = (lv) => lv * 2;   // Essence for level lv → lv + 1 (90 in all to reach 10)
+const stCd = (def) => def.cd * (1 - (ST.lv - 1) * 0.05);   // level 10: 55% of the base cooldown
+const ST_KEY = 'hideout_stand_v1_' + currentUser;
+
+function stBlank() { return { id: '', lv: 1, ess: 0, frag: 0, arrows: 0, pr: 0, pl: 0, dex: [], ed: '', et: 0, rc: '', rg: [], at: 0 }; }
+function stClean(o) {
+  const n = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
+  const c = stBlank();
+  if (!o || typeof o !== 'object') return c;
+  c.id = ST_BY[o.id] ? o.id : '';
+  c.lv = Math.max(1, n(o.lv, ST_MAX_LV));
+  c.ess = n(o.ess, 1e6); c.frag = n(o.frag, ST_FRAGS - 1); c.arrows = n(o.arrows, 999);
+  c.pr = n(o.pr, 999); c.pl = n(o.pl, 999);
+  c.dex = Array.isArray(o.dex) ? o.dex.filter((id, i, a) => ST_BY[id] && a.indexOf(id) === i) : [];
+  if (c.id && !c.dex.includes(c.id)) c.dex.push(c.id);
+  c.ed = typeof o.ed === 'string' ? o.ed.slice(0, 10) : ''; c.et = n(o.et, ST_ESS_CAP);
+  c.rc = typeof o.rc === 'string' ? o.rc.slice(0, 40) : '';
+  c.rg = Array.isArray(o.rg) ? o.rg.map(Number).filter((v) => Number.isInteger(v) && v >= 0 && v < 64).slice(0, 64) : [];
+  c.at = Number(o.at) || 0;
+  if (typeof o.gb === 'string' && o.gb) c.gb = o.gb.slice(0, 40);   // given by an admin
+  return c;
+}
+
+let ST = stBlank();
+try { const raw = localStorage.getItem(ST_KEY); if (raw) ST = stClean(JSON.parse(raw)); } catch (e) {}
+let stOut = false;                 // summoned right now (not saved: you call it again each visit)
+let stMoveAt = 0, stReadyAt = 0, stBurstUntil = 0;
+let stCloud = true;                // false once the users-doc write is refused (rules not deployed yet)
+let stSaveT = 0;
+function stMirror() { try { localStorage.setItem(ST_KEY, JSON.stringify(ST)); } catch (e) {} }
+function stSave() {
+  ST.at = Date.now();
+  stMirror();
+  clearTimeout(stSaveT);
+  stSaveT = setTimeout(stPush, 1500);   // pickups come in bursts: one write for the lot
+}
+function stPush() {
+  if (!stCloud) return;
+  const out = Object.assign({}, ST); delete out.gb;
+  updateDoc(doc(db, 'users', currentUser), { stand: out }).catch((e) => {
+    if (e && e.code === 'permission-denied') {
+      stCloud = false;
+      console.warn('[Stand] the Firestore rules refused users/' + currentUser + '.stand — add \'stand\' to selfPrefFields. Kept in this browser for now.');
+    }
+  });
+}
+let stFirstSnap = true;
+onSnapshot(doc(db, 'users', currentUser), (snap) => {
+  const s = snap.exists() ? snap.data().stand : null;
+  const first = stFirstSnap; stFirstSnap = false;
+  if (!s || typeof s !== 'object') { if (first && ST.at) stPush(); return; }   // nothing saved there yet: send what this browser has
+  const c = stClean(s);
+  if (c.at <= ST.at) { if (first && c.at < ST.at) stPush(); return; }
+  const was = ST.id;
+  ST = c; stMirror();
+  if (c.gb && c.id && c.id !== was) {
+    stOut = true; lastPresenceSig = '';
+    showToast('🏹 ' + c.gb + ' gave you ' + ST_BY[c.id].name + '! Q summons it, R uses ' + ST_BY[c.id].move + '.');
+    delete ST.gb; stSave();
+  }
+  stCardRender();
+}, (err) => console.warn('[Stand] listener:', err.message));
+
+function stToday() { return new Date().toISOString().slice(0, 10); }   // UTC, like the arcade's daily cap
+function standEssence(n, why) {
+  if (ST.ed !== stToday()) { ST.ed = stToday(); ST.et = 0; }
+  const g = Math.max(0, Math.min(n, ST_ESS_CAP - ST.et));
+  if (!g) return;
+  ST.et += g; ST.ess += g;
+  stSave();
+  const capped = ST.et >= ST_ESS_CAP ? ' (that\'s today\'s 40)' : '';
+  setTimeout(() => showToast('✨ +' + g + ' Stand Essence · ' + why + capped), 1600);   // after the payout's own toast
+  stCardRender();
+}
+function standGatherRoll() {
+  if (Math.random() >= ST_FRAG_CHANCE) return;
+  ST.frag++;
+  let msg = '🏹 Arrow Fragment (' + ST.frag + '/' + ST_FRAGS + ')';
+  if (ST.frag >= ST_FRAGS) {
+    ST.frag -= ST_FRAGS; ST.arrows++;
+    msg = '🏹 Five fragments fused into a Stone Arrow! ' + (ST.id ? 'Release your Stand (K) to roll again.' : 'Hold Q to pierce yourself.');
+    stSfx('craft');
+  }
+  stSave(); stCardRender();
+  setTimeout(() => showToast(msg), 1400);
+}
+
+function stRoll() {
+  ST.pr++; ST.pl++;
+  let rar = 'common';
+  if (ST.pl >= ST_PITY_LEG) rar = 'legendary';
+  else {
+    let r = Math.random(), acc = 0;
+    for (const [k, p] of ST_ODDS) { acc += p; if (r < acc) { rar = k; break; } }
+    if (rar === 'common' && ST.pr >= ST_PITY_RARE) rar = 'rare';
+  }
+  if (rar !== 'common') ST.pr = 0;
+  if (rar === 'legendary') ST.pl = 0;
+  const pool = STANDS.filter((s) => s.rar === rar);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ── Look and sound ──────────────────────────────────────────────────────────
+document.head.insertAdjacentHTML('beforeend', `<style>
+  #st-pierce{position:fixed;inset:0;pointer-events:none;z-index:24;display:none;
+    background:radial-gradient(ellipse at center,rgba(255,200,80,0) 30%,rgba(150,10,30,.55) 100%)}
+  #st-pierce .ring{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;
+    background:conic-gradient(#ffd34d var(--p,0%),rgba(255,255,255,.08) 0);-webkit-mask:radial-gradient(circle,transparent 52px,#000 54px);mask:radial-gradient(circle,transparent 52px,#000 54px)}
+  #st-pierce .arrow{position:absolute;left:50%;top:50%;font-size:46px;transform:translate(-50%,-50%) rotate(-45deg);filter:drop-shadow(0 0 12px #ffb000)}
+  #st-pierce .t{position:absolute;left:0;right:0;top:calc(50% + 78px);text-align:center;font:500 .85rem 'DM Mono',monospace;letter-spacing:.3em;color:#ffe9b0;text-shadow:0 0 10px #000}
+  #st-flash{position:fixed;inset:0;pointer-events:none;z-index:27;background:#fff;opacity:0}
+  #st-flash.go{animation:stFlash 1.1s ease-out}
+  @keyframes stFlash{0%{opacity:1}100%{opacity:0}}
+  #st-reel{position:fixed;inset:0;z-index:26;display:none;align-items:center;justify-content:center;flex-direction:column;gap:22px;
+    background:radial-gradient(ellipse at center,rgba(20,12,40,.82),rgba(4,2,10,.94));font-family:'DM Mono',monospace;color:#e8e4dc}
+  #st-reel .hd{font:600 clamp(1.1rem,3vw,1.6rem) 'Cormorant Garamond',serif;font-style:italic;letter-spacing:.08em;color:#ffe27a}
+  #st-reel .win{position:relative;width:min(760px,92vw);height:110px;overflow:hidden;border:1px solid #3a2e5a;border-radius:14px;background:#0c0916}
+  #st-reel .strip{position:absolute;left:0;top:0;height:100%;display:flex;will-change:transform}
+  #st-reel .cell{flex:0 0 150px;height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;box-sizing:border-box;
+    border-right:1px solid #1d1830;font:600 .95rem 'Cormorant Garamond',serif;line-height:1.15}
+  #st-reel .mark{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:#ffd34d;box-shadow:0 0 14px #ffd34d}
+  #st-reel .rv{display:none;text-align:center;max-width:min(520px,92vw)}
+  #st-reel .rv.show{display:block;animation:stRv .6s cubic-bezier(.2,.8,.2,1)}
+  @keyframes stRv{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  #st-reel .rar{font-size:.78rem;letter-spacing:.45em}
+  #st-reel .nm{font:700 clamp(2.2rem,8vw,4.4rem) 'Cormorant Garamond',serif;font-style:italic;line-height:1.05;margin:6px 0 4px}
+  #st-reel .pt{font-size:.72rem;color:#9a94a8;letter-spacing:.15em}
+  #st-reel .stats{display:flex;gap:8px;justify-content:center;margin:16px 0 10px}
+  #st-reel .stats div,#st-card .stats div{background:#16121f;border:1px solid #2c2440;border-radius:8px;padding:6px 10px;font-size:.72rem;color:#9a94a8}
+  #st-reel .stats b,#st-card .stats b{display:block;font-size:1.05rem;color:#f1ecff}
+  #st-reel .mv{font-size:.82rem;color:#d8d2c0}
+  #st-reel .go{margin-top:18px;font-size:.72rem;color:#8a84a0;letter-spacing:.2em}
+  #st-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;display:none;width:min(440px,92vw);max-height:86vh;overflow:auto;box-sizing:border-box;
+    background:rgba(14,11,22,.96);border:1px solid #3a2e5a;border-radius:16px;padding:18px 20px 16px;font:500 .8rem 'DM Mono',monospace;color:#e2e0dc;
+    box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(122,92,255,.18)}
+  #st-card h3{margin:0 0 12px;font:600 1.3rem 'Cormorant Garamond',serif;font-style:italic;color:#ffe27a;display:flex;justify-content:space-between;align-items:center}
+  #st-card h3 button{background:none;border:none;color:#8a84a0;font-size:1rem;cursor:pointer}
+  #st-card .me{border:1px solid #2c2440;border-radius:12px;padding:12px;background:#120f1c}
+  #st-card .nm{font:700 1.6rem 'Cormorant Garamond',serif;font-style:italic;line-height:1.1}
+  #st-card .sub{font-size:.7rem;letter-spacing:.2em;margin-top:2px}
+  #st-card .stats{display:flex;gap:6px;margin:10px 0}
+  #st-card .bar{height:6px;border-radius:4px;background:#1d1830;overflow:hidden;margin:6px 0 4px}
+  #st-card .bar i{display:block;height:100%;background:linear-gradient(90deg,#7a5cff,#ffd34d)}
+  #st-card .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  #st-card .b{flex:1 1 auto;background:#1e1830;border:1px solid #3a2e5a;color:#e8e4dc;border-radius:8px;padding:8px 10px;font:inherit;cursor:pointer}
+  #st-card .b:hover:not([disabled]){border-color:#ffd34d}
+  #st-card .b[disabled]{opacity:.4;cursor:default}
+  #st-card .b.danger{border-color:#5a2e3a;color:#ffb4c0}
+  #st-card .lbl{margin:16px 0 6px;font-size:.66rem;letter-spacing:.3em;color:#8a84a0}
+  #st-card .inv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #st-card .inv div{background:#120f1c;border:1px solid #241e34;border-radius:8px;padding:8px;text-align:center;font-size:.68rem;color:#9a94a8}
+  #st-card .inv b{display:block;font-size:1.05rem;color:#f1ecff;margin-bottom:2px}
+  #st-card .dex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #st-card .dex div{border:1px solid #241e34;border-radius:8px;padding:8px 6px;text-align:center;font:600 .9rem 'Cormorant Garamond',serif;min-height:38px;display:flex;align-items:center;justify-content:center}
+  #st-card .dex div.no{color:#3c3650;font-family:'DM Mono',monospace;font-size:.75rem}
+  #st-card .note{margin-top:12px;font-size:.66rem;color:#7a7490;line-height:1.5}
+  #st-hud{position:fixed;left:50%;bottom:142px;transform:translateX(-50%);z-index:21;pointer-events:none;display:none;text-align:center;white-space:nowrap;
+    background:rgba(17,14,26,.82);border:1px solid #2c2440;border-radius:12px;padding:6px 14px;backdrop-filter:blur(6px);font:500 .74rem 'DM Mono',monospace;color:#e2e0dc}
+  #st-hud b{font-weight:500}
+  #st-ora{position:fixed;inset:0;pointer-events:none;z-index:22;overflow:hidden}
+  #st-ora span{position:absolute;font:900 clamp(1.4rem,4vw,2.6rem) 'Cormorant Garamond',serif;font-style:italic;color:#fff;
+    text-shadow:3px 3px 0 #4a2cb0,0 0 18px #7a5cff;animation:stOra .55s ease-out forwards}
+  @keyframes stOra{0%{opacity:0;transform:scale(1.8)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9) translateY(-14px)}}
+</style>`);
+document.body.insertAdjacentHTML('beforeend', `<div id="st-pierce"><div class="ring"></div><div class="arrow">🏹</div><div class="t">PIERCING · KEEP HOLDING Q</div></div>
+  <div id="st-flash"></div>
+  <div id="st-reel"><div class="hd">Your Stand is awakening…</div><div class="win"><div class="strip"></div><div class="mark"></div></div><div class="rv"></div></div>
+  <div id="st-card"></div><div id="st-hud"></div><div id="st-ora"></div>`);
+const stEl = { pierce: document.getElementById('st-pierce'), flash: document.getElementById('st-flash'), reel: document.getElementById('st-reel'), card: document.getElementById('st-card'), hud: document.getElementById('st-hud'), ora: document.getElementById('st-ora') };
+stEl.strip = stEl.reel.querySelector('.strip'); stEl.win = stEl.reel.querySelector('.win'); stEl.rv = stEl.reel.querySelector('.rv'); stEl.rhd = stEl.reel.querySelector('.hd');
+const stHex = (c) => '#' + c.toString(16).padStart(6, '0');
+
+function stSfx(kind) {
+  const a = domAudio(); if (!a) return;
+  try {
+    const t = a.currentTime, out = a.createGain(); out.gain.value = 0.45; out.connect(a.destination);
+    const tone = (type, f0, f1, dur, vol, at = 0) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(f0, t + at); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + at + dur);
+      g.gain.setValueAtTime(0.0001, t + at); g.gain.exponentialRampToValueAtTime(vol, t + at + Math.min(0.02, dur / 4)); g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      o.connect(g); g.connect(out); o.start(t + at); o.stop(t + at + dur + 0.05);
+    };
+    if (kind === 'beat') { tone('sine', 70, 40, 0.18, 0.9); tone('sine', 62, 36, 0.2, 0.7, 0.2); }
+    else if (kind === 'tick') tone('square', 1900, 1400, 0.03, 0.12);
+    else if (kind === 'stab') { tone('sawtooth', 900, 60, 0.5, 0.35); tone('sine', 120, 30, 0.8, 0.9); }
+    else if (kind === 'reveal') { [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, 1.4, 0.18, i * 0.09)); tone('sine', 90, 45, 1, 0.6); }
+    else if (kind === 'legend') { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 2, 0.16, i * 0.11)); tone('sawtooth', 55, 50, 2.2, 0.15); }
+    else if (kind === 'summon') { tone('sine', 180, 720, 0.35, 0.4); tone('triangle', 1200, 1600, 0.25, 0.1, 0.1); }
+    else if (kind === 'dismiss') tone('sine', 700, 160, 0.3, 0.35);
+    else if (kind === 'craft' || kind === 'pick') { tone('triangle', 1318, 1318, 0.4, 0.2); tone('triangle', 1760, 1760, 0.5, 0.16, 0.08); }
+    else if (kind === 'level') [659, 880, 1175].forEach((f, i) => tone('triangle', f, f, 0.6, 0.2, i * 0.07));
+    else if (kind === 'mr') { tone('sawtooth', 110, 60, 1.6, 0.22); tone('sine', 300, 900, 0.6, 0.15); }
+    else if (kind === 'hg') for (let i = 0; i < 8; i++) tone('triangle', 1400 + Math.random() * 1400, 900, 0.12, 0.08, 0.2 + i * 0.05);
+    else if (kind === 'sp') for (let i = 0; i < 18; i++) tone('square', 160 + Math.random() * 60, 70, 0.06, 0.16, i * 0.1);
+    else if (kind === 'ge') [784, 988, 1175, 1568].forEach((f, i) => tone('sine', f, f, 0.9, 0.12, i * 0.12));
+    else if (kind === 'kq') tone('square', 2600, 2600, 0.04, 0.2);
+    else if (kind === 'boom') { tone('sine', 140, 30, 0.9, 0.9); tone('sawtooth', 80, 30, 0.6, 0.3); }
+  } catch (e) {}
+}
+
+// ── The Stand figure: a glowing, legless spirit built from simple shapes ─────
+const stGeo = {
+  torso: new THREE.CapsuleGeometry(0.2, 0.42, 4, 10),
+  tail: new THREE.ConeGeometry(0.2, 0.8, 10, 1, true),
+  head: new THREE.SphereGeometry(0.16, 14, 10),
+  sh: new THREE.SphereGeometry(0.105, 10, 8),
+  arm: new THREE.CapsuleGeometry(0.065, 0.26, 3, 8),
+  fist: new THREE.SphereGeometry(0.085, 10, 8),
+  eye: new THREE.SphereGeometry(0.026, 6, 4),
+  cone: new THREE.ConeGeometry(0.05, 0.16, 8),
+  ring: new THREE.TorusGeometry(0.17, 0.025, 6, 20),
+  dot: new THREE.SphereGeometry(0.04, 8, 6),
+};
+const stAuraTex = makeCanvasTexture(128, (ctx, s) => {
+  const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(0.35, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, s, s);
+});
+function stBuild(def, lv) {
+  const g = new THREE.Group(), fig = new THREE.Group(), mats = [];
+  g.userData.noBake = true;
+  g.add(fig);
+  const mk = (col, op, ei) => {
+    const m = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: ei, roughness: 0.35, metalness: 0.15, transparent: true, opacity: op, depthWrite: false });
+    m.userData.base = op; mats.push(m); return m;
+  };
+  const body = mk(def.col, 0.8, 0.55), acc = mk(def.acc, 0.88, 0.75), tail = mk(def.col, 0.42, 0.5), eyeM = mk(0xffffff, 1, 2.4);
+  const add = (geo, mat, x, y, z, parent = fig) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.renderOrder = 4; parent.add(m); return m; };
+  add(stGeo.torso, body, 0, 1.22, 0).scale.set(1.25, 1, 0.85);
+  add(stGeo.tail, tail, 0, 0.62, 0).rotation.x = Math.PI;   // the body trails away to nothing
+  add(stGeo.head, body, 0, 1.74, 0);
+  add(stGeo.sh, acc, 0.31, 1.45, 0); add(stGeo.sh, acc, -0.31, 1.45, 0);
+  add(stGeo.eye, eyeM, 0.06, 1.77, 0.14); add(stGeo.eye, eyeM, -0.06, 1.77, 0.14);
+  const arm = (side) => {
+    const p = new THREE.Group(); p.position.set(side * 0.34, 1.45, 0); fig.add(p);
+    add(stGeo.arm, body, 0, -0.2, 0, p); add(stGeo.fist, acc, 0, -0.42, 0, p);
+    return p;
+  };
+  const armL = arm(1), armR = arm(-1);
+  const ring = (y, sx, sz) => { const r = add(stGeo.ring, acc, 0, y, 0); r.rotation.x = Math.PI / 2; r.scale.set(sx, sz, 1); return r; };
+  if (def.extra === 'beak') { const b = add(stGeo.cone, acc, 0, 1.73, 0.2); b.rotation.x = Math.PI / 2; b.scale.set(1.4, 1.7, 1.4); }
+  else if (def.extra === 'ears') for (const s of [1, -1]) add(stGeo.cone, acc, s * 0.1, 1.9, 0).rotation.z = -s * 0.35;
+  else if (def.extra === 'band') ring(1.8, 1.02, 1.02);
+  else if (def.extra === 'crest') { ring(1.8, 1.02, 1.02); add(stGeo.dot, acc, 0, 1.32, 0.18).scale.set(1.8, 1.8, 0.7); }
+  else if (def.extra === 'ladybugs') for (const [x, y] of [[0.12, 1.34], [-0.12, 1.34], [0, 1.12]]) add(stGeo.dot, acc, x, y, 0.18);
+  else if (def.extra === 'stripes') for (const y of [1.06, 1.24, 1.42]) ring(y, 1.5, 1.05);
+  const aura = new THREE.Sprite(new THREE.SpriteMaterial({ map: stAuraTex, color: def.col, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+  aura.position.y = 1.2; aura.renderOrder = 3;
+  g.add(aura);
+  g.userData = { noBake: true, def, mats, fig, armL, armR, aura, lv };
+  return g;
+}
+function stDispose(g) {
+  g.removeFromParent();
+  g.userData.mats.forEach((m) => m.dispose());
+  g.userData.aura.material.dispose();
+}
+// Where it floats, in its owner's frame (+z ahead, −x to the right): behind your
+// right shoulder; in first person off to the right where you can see it; and
+// right out in front while a move plays.
+const _stOff = new THREE.Vector3();
+function stAnimate(r, dt, time, firstPerson) {
+  const u = r.g.userData;
+  r.k += ((r.want ? 1 : 0) - r.k) * Math.min(1, dt * 7);
+  const since = (performance.now() - r.moveAt) / 1000, act = r.moveAt > 0 && since < u.def.dur;
+  r.l += ((act ? 1 : 0) - r.l) * Math.min(1, dt * 10);
+  if (firstPerson) _stOff.set(-1.35, -0.1, 2.0).lerp(_stOff.clone().set(0, -0.15, 2.5), r.l);
+  else _stOff.set(-0.62, 0.15, -0.8).lerp(_stOff.clone().set(0, 0.05, 1.25), r.l);
+  r.g.position.copy(_stOff);
+  r.g.scale.setScalar((0.3 + 0.7 * r.k) * (0.95 + u.lv * 0.015));
+  for (const m of u.mats) m.opacity = m.userData.base * r.k;
+  u.aura.material.opacity = (0.32 + u.lv * 0.025 + (act ? 0.25 : 0)) * r.k;
+  const as = (1.9 + u.lv * 0.09) * (1 + Math.sin(time * 3 + r.ph) * 0.06);
+  u.aura.scale.set(as, as * 1.3, 1);
+  u.fig.position.y = Math.sin(time * 2.1 + r.ph) * 0.07;
+  u.fig.rotation.y = Math.sin(time * 0.7 + r.ph) * 0.08;
+  const punch = act && (u.def.id === 'sp' || u.def.id === 'tw' || u.def.id === 'kq');
+  if (punch) {
+    const f = u.def.id === 'kq' ? 9 : 38;
+    u.armL.rotation.x = -1.45 + Math.sin(time * f) * 0.6;
+    u.armR.rotation.x = -1.45 + Math.sin(time * f + Math.PI) * 0.6;
+  } else if (act) {   // casting: both arms raised
+    u.armL.rotation.x += (-2.2 - u.armL.rotation.x) * Math.min(1, dt * 8); u.armR.rotation.x = u.armL.rotation.x;
+  } else {
+    u.armL.rotation.x += (Math.sin(time * 1.3 + r.ph) * 0.12 - 0.15 - u.armL.rotation.x) * Math.min(1, dt * 6);
+    u.armR.rotation.x += (Math.sin(time * 1.3 + r.ph + 1) * 0.12 - 0.15 - u.armR.rotation.x) * Math.min(1, dt * 6);
+  }
+  r.g.visible = r.k > 0.01;
+}
+// Yours hangs off an anchor that follows you; everyone else's is a child of their avatar.
+const stAnchor = new THREE.Object3D();
+scene.add(stAnchor);
+let stLocal = null;   // { id, g, k, l, want, moveAt, ph }
+function stNewRig(id, lv) { return { id, g: stBuild(ST_BY[id], lv), k: 0, l: 0, want: true, moveAt: 0, ph: Math.random() * 6 }; }
+
+// ── Moves ───────────────────────────────────────────────────────────────────
+const stTimers = [], stBirds = [], stFlowers = [], stBombs = [];
+const _stFwd = new THREE.Vector3(), _stPos = new THREE.Vector3();
+const stBirdMat = new THREE.MeshBasicMaterial({ color: 0xff7a2a, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const stWingGeo = new THREE.PlaneGeometry(0.9, 0.34);
+const stFlowerGeo = { stem: new THREE.CylinderGeometry(0.014, 0.02, 0.34, 5), petal: new THREE.SphereGeometry(0.055, 7, 5), mid: new THREE.SphereGeometry(0.04, 7, 5) };
+const stStemMat = new THREE.MeshStandardMaterial({ color: 0x3f9a46, roughness: 0.8 });
+const stPetalMats = [0xff6fa8, 0xffe14a, 0xffffff, 0xb07aff, 0xff8a3a].map((c) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, roughness: 0.6 }));
+const stMidMat = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0xffa000, emissiveIntensity: 0.5 });
+const stBombMat = new THREE.MeshBasicMaterial({ color: 0xff79c6, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+function stLater(ms, fn) { stTimers.push({ at: performance.now() + ms, fn }); }
+function stSpark(x, y, z, vx, vy, vz, rgb, life) {
+  if (fwParts.length < FW_MAX) fwParts.push({ x, y, z, vx, vy, vz, r: rgb[0], g: rgb[1], b: rgb[2], life, max: life });
+}
+// Plays a move's effect around `owner` (your anchor, or their avatar). `mine` is
+// only true for your own cast: the speed burst and the ORA text are just yours.
+function stFx(def, r, lv, owner, mine) {
+  const o = owner.position, ry = owner.rotation.y;
+  _stFwd.set(Math.sin(ry), 0, Math.cos(ry));
+  const fx = _stFwd.x, fz = _stFwd.z, oy = o.y || 0;
+  if (def.id === 'mr') {
+    const b = new THREE.Group();
+    const body = new THREE.Mesh(stGeo.head, stBirdMat); body.scale.set(0.9, 0.8, 1.9); b.add(body);
+    const wl = new THREE.Mesh(stWingGeo, stBirdMat); wl.position.x = 0.5; const wr = new THREE.Mesh(stWingGeo, stBirdMat); wr.position.x = -0.5;
+    const wings = [new THREE.Group(), new THREE.Group()]; wings[0].add(wl); wings[1].add(wr); b.add(wings[0], wings[1]);
+    const beak = new THREE.Mesh(stGeo.cone, stBirdMat); beak.rotation.x = Math.PI / 2; beak.position.z = 0.36; b.add(beak);
+    scene.add(b);
+    stBirds.push({ b, wings, owner, t: 0, dur: def.dur, a0: ry, lv });
+  } else if (def.id === 'hg') {
+    stLater(220, () => {
+      const n = 22 + lv * 3, x = o.x + fx * 0.9, z = o.z + fz * 0.9;
+      for (let i = 0; i < n; i++) {
+        const sp = 13 + Math.random() * 6, side = (Math.random() - 0.5) * 7;
+        stSpark(x, oy + 1.35, z, fx * sp - fz * side, 0.5 + Math.random() * 3.5, fz * sp + fx * side, [0.25, 1, 0.55], 1 + Math.random() * 0.4);
+      }
+    });
+  } else if (def.id === 'sp' || def.id === 'tw') {
+    for (let i = 0; i < (def.id === 'sp' ? 18 : 8); i++) stLater(120 + i * 105, () => {
+      const ry2 = owner.rotation.y, x = owner.position.x + Math.sin(ry2) * 2.1 + (Math.random() - 0.5) * 0.7, z = owner.position.z + Math.cos(ry2) * 2.1 + (Math.random() - 0.5) * 0.7;
+      fwBurst(x, (owner.position.y || 0) + 1.2 + (Math.random() - 0.5) * 0.6, z, 7, def.id === 'sp' ? [1, 1, 1] : [1, 0.85, 0.35], 3, 0.3);
+    });
+    if (mine && def.id === 'sp') {
+      stBurstUntil = performance.now() + 2200 + lv * 100;
+      for (let i = 0; i < 16; i++) stLater(i * 110, () => {
+        const s = document.createElement('span'); s.textContent = 'ORA';
+        s.style.left = (15 + Math.random() * 65) + '%'; s.style.top = (18 + Math.random() * 55) + '%';
+        stEl.ora.appendChild(s); setTimeout(() => s.remove(), 600);
+      });
+    }
+  } else if (def.id === 'ge') {
+    const n = 10 + lv;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, d = 1.1 + Math.random() * (2.4 + lv * 0.2);
+      const f = new THREE.Group();
+      f.add(new THREE.Mesh(stFlowerGeo.stem, stStemMat)).position.y = 0.17;
+      const pm = stPetalMats[Math.floor(Math.random() * stPetalMats.length)];
+      for (let p = 0; p < 5; p++) { const m = new THREE.Mesh(stFlowerGeo.petal, pm); m.position.set(Math.cos(p * 1.2566) * 0.065, 0.36, Math.sin(p * 1.2566) * 0.065); m.scale.y = 0.5; f.add(m); }
+      f.add(new THREE.Mesh(stFlowerGeo.mid, stMidMat)).position.y = 0.37;
+      f.position.set(o.x + Math.cos(a) * d, oy, o.z + Math.sin(a) * d);
+      f.rotation.y = Math.random() * 6; f.scale.setScalar(0.001);
+      scene.add(f);
+      stFlowers.push({ f, t: -i * 0.05, life: 20, s: 1 + Math.random() * 0.6 });
+      while (stFlowers.length > 90) scene.remove(stFlowers.shift().f);
+    }
+    for (let i = 0; i < 30; i++) stSpark(o.x, oy + 0.3, o.z, (Math.random() - 0.5) * 6, 3 + Math.random() * 3, (Math.random() - 0.5) * 6, [1, 0.9, 0.3], 1.2);
+  } else if (def.id === 'kq') {
+    const x = o.x + fx * 4.5, z = o.z + fz * 4.5;
+    const m = new THREE.Mesh(stGeo.ring, stBombMat); m.rotation.x = Math.PI / 2; m.position.set(x, oy + 0.06, z); m.scale.setScalar(3);
+    scene.add(m);
+    stBombs.push({ m, t: 0, fuse: 1.4, x, y: oy, z, lv });
+  }
+}
+function stMove() {
+  if (!ST.id) return;
+  if (!bbOutdoors()) { showToast('Stands only come out in the open world.'); return; }
+  if (TS.held || DOM.caught) return;
+  const def = ST_BY[ST.id], now = performance.now();
+  if (!stOut) stToggle(true);
+  if (def.id === 'tw') {   // The World's move *is* Za Warudo, with Za Warudo's own cooldown
+    const was = TS.on; tsTry();
+    if (!was && TS.on) { stMoveAt = Date.now(); if (stLocal) stLocal.moveAt = now; lastPresenceSig = ''; lastSync = 0; }
+    return;
+  }
+  if (now < stReadyAt) { showToast(def.move + ' needs ' + Math.ceil((stReadyAt - now) / 1000) + 's.'); return; }
+  stReadyAt = now + stCd(def);
+  stMoveAt = Date.now(); lastPresenceSig = ''; lastSync = 0;   // tell everyone right away
+  if (stLocal) stLocal.moveAt = now;
+  stFx(def, stLocal, ST.lv, stAnchor, true);
+  stSfx(def.id);
+}
+function standMoveMul() { return performance.now() < stBurstUntil ? 1.6 : 1; }
+function standHasWorld() { return ST.id === 'tw' && stOut; }
+function stToggle(on) {
+  if (!ST.id) return;
+  if (!bbOutdoors()) { showToast('Stands only come out in the open world.'); return; }
+  stOut = on === undefined ? !stOut : on;
+  lastPresenceSig = ''; lastSync = 0;
+  stSfx(stOut ? 'summon' : 'dismiss');
+  if (stOut) { stAnchorSync(); fwBurst(stAnchor.position.x, stAnchor.position.y + 1.3, stAnchor.position.z, 40, stRgb(ST_BY[ST.id].col), 4, 0.8); }
+  if (!stOut && TS.on && ST.id === 'tw' && !abilityAllowed('zawarudo')) tsEnd();
+  stCardRender();
+}
+const stRgb = (c) => [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
+function stAnchorSync() { stAnchor.position.copy(localPos); stAnchor.rotation.y = yaw; }
+
+// ── Piercing and the roll ───────────────────────────────────────────────────
+let stHold = 0, stBeats = 0;
+let stReel = null;   // { s, start, x1, cells, lastCell, done, shownAt }
+function stPierceStart() {
+  if (!bbOutdoors()) { showToast('Find somewhere out in the open world to do this.'); return; }
+  stHold = performance.now(); stBeats = 0;
+  stEl.pierce.style.display = 'block';
+}
+function stPierceCancel() {
+  if (!stHold) return;
+  stHold = 0; stEl.pierce.style.display = 'none';
+  showToast('Hold Q all the way to pierce yourself with the arrow.');
+}
+function stPierceTick(now) {
+  const p = Math.min(1, (now - stHold) / ST_HOLD_MS);
+  stEl.pierce.style.setProperty('--p', (p * 100).toFixed(1) + '%');
+  stEl.pierce.style.opacity = 0.4 + p * 0.6;
+  if (p * 4 >= stBeats + 1) { stBeats++; stSfx('beat'); }
+  if (p >= 1) {
+    stHold = 0; stEl.pierce.style.display = 'none';
+    stSfx('stab');
+    stEl.flash.classList.remove('go'); void stEl.flash.offsetWidth; stEl.flash.classList.add('go');
+    ST.arrows--;
+    const s = stRoll();
+    ST.id = s.id; ST.lv = 1;
+    if (!ST.dex.includes(s.id)) ST.dex.push(s.id);
+    stSave();
+    if (s.rar !== 'common') addDoc(collection(db, 'activity'), { type: 'stand', user: currentUser, detail: s.name + ' (' + ST_RARITY[s.rar].name + ')', ts: Date.now() }).catch(() => {});
+    if (s.rar === 'legendary') { myChatMsg = '🏹 ' + s.name + '!'; myChatSentAt = Date.now(); }
+    stReelStart(s);
+  }
+}
+function stReelStart(s) {
+  ADM.stReel = true; keys.clear();
+  if (document.pointerLockElement) document.exitPointerLock();
+  const CELL = 150, TARGET = 36, cells = [];
+  for (let i = 0; i < 42; i++) cells.push(i === TARGET ? s : STANDS[Math.floor(Math.random() * STANDS.length)]);
+  stEl.strip.innerHTML = cells.map((c) => `<div class="cell" style="color:${ST_RARITY[c.rar].col};background:linear-gradient(180deg,${stHex(c.col)}22,transparent)">${escHtml(c.name)}</div>`).join('');
+  stEl.strip.style.transform = 'translateX(0px)';
+  stEl.rv.className = 'rv'; stEl.rhd.style.display = 'block'; stEl.win.style.display = 'block';
+  stEl.reel.style.display = 'flex';
+  const x1 = TARGET * CELL + CELL / 2 - stEl.win.clientWidth / 2 + (Math.random() - 0.5) * CELL * 0.6;
+  stReel = { s, start: performance.now(), x1, lastCell: 0, done: false, shownAt: 0 };
+}
+function stReelTick(now) {
+  const r = stReel, T = 3600;
+  if (!r.done) {
+    const t = Math.min(1, (now - r.start) / T), x = r.x1 * (1 - Math.pow(1 - t, 4));
+    stEl.strip.style.transform = 'translateX(' + (-x).toFixed(1) + 'px)';
+    const cell = Math.floor((x + stEl.win.clientWidth / 2) / 150);
+    if (cell !== r.lastCell) { r.lastCell = cell; stSfx('tick'); }
+    if (t >= 1) { r.done = true; setTimeout(() => stReveal(r.s), 350); }
+  }
+}
+function stReveal(s) {
+  if (!stReel) return;
+  const [P, S, R, D] = s.st.split('/');
+  stEl.rhd.style.display = 'none'; stEl.win.style.display = 'none';
+  stEl.rv.innerHTML = `<div class="rar" style="color:${ST_RARITY[s.rar].col}">✦ ${ST_RARITY[s.rar].name.toUpperCase()} ✦</div>
+    <div class="nm" style="color:${stHex(s.col)};text-shadow:0 0 30px ${stHex(s.col)}88">${escHtml(s.name)}</div>
+    <div class="pt">${ST_PARTS[s.part]}</div>
+    <div class="stats"><div>Power<b>${P}</b></div><div>Speed<b>${S}</b></div><div>Range<b>${R}</b></div><div>Durability<b>${D}</b></div></div>
+    <div class="mv"><b>${escHtml(s.move)}</b> — ${escHtml(s.blurb)}</div>
+    <div class="go">Q SUMMON · R ${escHtml(s.move.toUpperCase())} · K STAND CARD<br>click or press any key</div>`;
+  stEl.rv.className = 'rv show';
+  stSfx(s.rar === 'legendary' ? 'legend' : 'reveal');
+  stReel.shownAt = performance.now();
+}
+function stReelClose() {
+  if (!stReel || !stReel.shownAt || performance.now() - stReel.shownAt < 700) return;
+  stReel = null; ADM.stReel = false;
+  stEl.reel.style.display = 'none';
+  stOut = false; stToggle(true);
+}
+stEl.reel.addEventListener('click', stReelClose);
+
+// ── Stand card (K) ──────────────────────────────────────────────────────────
+let stRelArmed = 0;
+function stCardOpen() {
+  ADM.stCard = true; keys.clear();
+  if (document.pointerLockElement) document.exitPointerLock();
+  stEl.card.style.display = 'block';
+  stCardRender();
+}
+function stCardClose() { ADM.stCard = false; stEl.card.style.display = 'none'; stRelArmed = 0; syncLookHint(); }
+function stCardRender() {
+  if (!ADM.stCard) return;
+  const s = ST.id ? ST_BY[ST.id] : null;
+  let me;
+  if (s) {
+    const [P, S, R, D] = s.st.split('/'), max = ST.lv >= ST_MAX_LV, cost = stCost(ST.lv);
+    me = `<div class="me"><div class="nm" style="color:${stHex(s.col)}">${escHtml(s.name)}</div>
+      <div class="sub" style="color:${ST_RARITY[s.rar].col}">${ST_RARITY[s.rar].name.toUpperCase()} · LEVEL ${ST.lv}/${ST_MAX_LV}</div>
+      <div class="stats"><div>P<b>${P}</b></div><div>S<b>${S}</b></div><div>R<b>${R}</b></div><div>D<b>${D}</b></div></div>
+      <div><b>${escHtml(s.move)}</b> (R) — ${escHtml(s.blurb)}${s.cd ? ' Cooldown ' + (stCd(s) / 1000).toFixed(1) + 's.' : ''}</div>
+      <div class="bar"><i style="width:${max ? 100 : Math.min(100, ST.ess / cost * 100)}%"></i></div>
+      <div style="color:#9a94a8">${max ? 'Max level.' : 'Next level: ' + cost + ' Essence (you have ' + ST.ess + ')'}</div>
+      <div class="row">
+        <button class="b" data-st="lvl" ${max || ST.ess < cost ? 'disabled' : ''}>⬆ Level up</button>
+        <button class="b" data-st="out">${stOut ? '🌫 Dismiss' : '✨ Summon'} (Q)</button>
+        <button class="b danger" data-st="rel">${stRelArmed ? 'Click again to release' : 'Release'}</button>
+      </div></div>`;
+  } else {
+    me = `<div class="me"><div class="nm" style="color:#8a84a0">No Stand yet</div>
+      <div style="margin-top:8px;line-height:1.6">${ST.arrows ? 'You have a Stone Arrow. Close this and <b>hold Q</b> out in the world to pierce yourself.' : 'Gather berry bushes (E) for Arrow Fragments. Five fuse into a Stone Arrow.'}</div></div>`;
+  }
+  const today = ST.ed === stToday() ? ST.et : 0;
+  stEl.card.innerHTML = `<h3>🏹 Stand <button data-st="x" title="Close (K / Esc)">✕</button></h3>${me}
+    <div class="lbl">ITEMS</div>
+    <div class="inv"><div><b>${ST.frag}/${ST_FRAGS}</b>Arrow fragments</div><div><b>${ST.arrows}</b>Stone arrows</div><div><b>${ST.ess}</b>Essence · ${today}/${ST_ESS_CAP} today</div></div>
+    <div class="lbl">STANDS FOUND · ${ST.dex.length}/${STANDS.length}</div>
+    <div class="dex">${STANDS.map((d) => ST.dex.includes(d.id) ? `<div style="color:${stHex(d.col)};border-color:${ST_RARITY[d.rar].col}55">${escHtml(d.name)}</div>` : '<div class="no">? ? ?</div>').join('')}</div>
+    <div class="note">Fragments: berry bushes · Essence: fishing and arcade runs (${ST_ESS_CAP} a day) · Rare every ${ST_PITY_RARE} rolls, Legendary every ${ST_PITY_LEG} at worst.${isAdmin && !stCloud ? '<br>⚠️ Admin: the Firestore rules refused saving <b>stand</b> to your profile, so progress is only in this browser. Add \'stand\' to selfPrefFields and deploy the rules.' : ''}</div>`;
+}
+stEl.card.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-st]');
+  if (!b || b.disabled) return;
+  const a = b.dataset.st;
+  if (a === 'x') { stCardClose(); return; }
+  if (a === 'out') stToggle();
+  if (a === 'lvl') stLevelUp();
+  if (a === 'rel') {
+    if (!stRelArmed || performance.now() - stRelArmed > 4000) { stRelArmed = performance.now(); stCardRender(); return; }
+    const name = ST_BY[ST.id].name;
+    stOut = false; ST.id = ''; ST.lv = 1; stRelArmed = 0; lastPresenceSig = '';
+    if (TS.on && !abilityAllowed('zawarudo')) tsEnd();
+    stSave(); stSfx('dismiss');
+    showToast(name + ' is gone. Your Essence stays; pierce yourself with another arrow to roll again.');
+  }
+  stCardRender();
+});
+function stLevelUp() {
+  if (!ST.id || ST.lv >= ST_MAX_LV) return;
+  const c = stCost(ST.lv);
+  if (ST.ess < c) return;
+  ST.ess -= c; ST.lv++;
+  stSave(); stSfx('level'); lastPresenceSig = '';
+  if (stLocal) stLocal.g.userData.lv = ST.lv;
+  stAnchorSync();
+  fwBurst(stAnchor.position.x, stAnchor.position.y + 1.4, stAnchor.position.z, 70, stRgb(ST_BY[ST.id].col), 5, 1);
+  showToast('⬆ ' + ST_BY[ST.id].name + ' is level ' + ST.lv + '.');
+}
+
+// ── Keys ────────────────────────────────────────────────────────────────────
+// From the main keydown handler. Returns true when it used the key.
+function standKey(k, e) {
+  if (stReel) { e.preventDefault(); stReelClose(); return true; }
+  if (ADM.stCard) { if (k === 'k' || k === 'escape') { e.preventDefault(); stCardClose(); } return true; }
+  if (k === 'k' && !e.repeat) { stCardOpen(); return true; }
+  if (k === 'q' && !e.repeat) {
+    if (ST.id) { stToggle(); return true; }
+    if (ST.arrows > 0) { stPierceStart(); return true; }
+    showToast(ST.frag ? 'No arrow yet: ' + ST.frag + '/' + ST_FRAGS + ' fragments. Gather berry bushes (E) for more.' : 'You need a Stone Arrow. Gather berry bushes (E) for Arrow Fragments; five make an arrow.');
+    return true;
+  }
+  if (k === 'r' && !e.repeat && !catalogOpen && ST.id) { stMove(); return true; }
+  return false;
+}
+addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'q' && stHold) stPierceCancel(); });
+addEventListener('blur', () => { if (stHold) stPierceCancel(); });
+
+// ── Arrow rain (admin event) ────────────────────────────────────────────────
+let stRain = null;   // { id, at, list: [{ g, x, z, got }] }
+const stArrowMats = {
+  gold: new THREE.MeshStandardMaterial({ color: 0xe8b84a, emissive: 0x8a5a10, emissiveIntensity: 0.6, metalness: 0.85, roughness: 0.3 }),
+  beam: new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }),
+};
+const stArrowGeo = { shaft: new THREE.CylinderGeometry(0.025, 0.025, 0.95, 6), head: new THREE.ConeGeometry(0.075, 0.24, 4), fl: new THREE.BoxGeometry(0.16, 0.18, 0.01), beam: new THREE.CylinderGeometry(0.07, 0.07, 26, 8, 1, true) };
+function stArrowMesh() {
+  const g = new THREE.Group(), a = new THREE.Group();
+  a.add(new THREE.Mesh(stArrowGeo.shaft, stArrowMats.gold));
+  a.add(new THREE.Mesh(stArrowGeo.head, stArrowMats.gold)).position.y = 0.58;
+  for (const r of [0, Math.PI / 2]) { const f = new THREE.Mesh(stArrowGeo.fl, stArrowMats.gold); f.position.y = -0.4; f.rotation.y = r; a.add(f); }
+  a.rotation.z = 0.35;
+  const beam = new THREE.Mesh(stArrowGeo.beam, stArrowMats.beam); beam.position.y = 13;
+  g.add(a, beam); g.userData = { a, noBake: true };
+  return g;
+}
+function stSeeded(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return () => { h = (h + 0x6D2B79F5) | 0; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function stRainClear() { if (!stRain) return; stRain.list.forEach((a) => scene.remove(a.g)); stRain = null; }
+function standRainSet(r) {
+  if (!r || typeof r !== 'object' || typeof r.id !== 'string' || Date.now() - (Number(r.at) || 0) > ST_RAIN_MS) { stRainClear(); return; }
+  if (stRain && stRain.id === r.id) return;
+  stRainClear();
+  const rng = stSeeded(r.id), cx = Number(r.x) || 0, cz = Number(r.z) || 0, B = OUTDOOR_BOUNDS, list = [];
+  const n = Math.max(1, Math.min(24, Number(r.n) || ST_RAIN_N));
+  const got = ST.rc === r.id ? ST.rg : [];
+  for (let i = 0; i < n; i++) {
+    let x = cx, z = cz;
+    for (let t = 0; t < 24; t++) {
+      const a = rng() * Math.PI * 2, d = 5 + rng() * 30;
+      x = THREE.MathUtils.clamp(cx + Math.cos(a) * d, B.xMin + 2, B.xMax - 2); z = THREE.MathUtils.clamp(cz + Math.sin(a) * d, B.zMin + 2, B.zMax - 2);
+      if (!collidesOutdoor(x, z)) break;
+    }
+    const g = stArrowMesh(); g.position.set(x, 40, z); g.visible = !got.includes(i);
+    scene.add(g);
+    list.push({ g, x, z, got: got.includes(i), drop: 0.2 + i * 0.12 });
+  }
+  stRain = { id: r.id, at: Number(r.at), list, t0: performance.now() };
+  if (Date.now() - stRain.at < 15000) showToast('🏹 Arrows are raining down' + (r.by ? ' — ' + r.by + ' made it rain' : '') + '! Walk into them to pick them up.');
+}
+function stRainTick(dt, time) {
+  if (!stRain) return;
+  if (Date.now() - stRain.at > ST_RAIN_MS) { stRainClear(); return; }
+  const out = bbOutdoors(), el = (performance.now() - stRain.t0) / 1000;
+  stRain.list.forEach((a, i) => {
+    if (a.got) return;
+    const k = Math.min(1, Math.max(0, (el - a.drop) / 1.1));
+    a.g.position.y = 40 * Math.pow(1 - k, 2) + 0.9 + Math.sin(time * 2 + i) * 0.12;
+    a.g.userData.a.rotation.y += dt * 1.6;
+    if (out && k >= 1 && Math.hypot(localPos.x - a.x, localPos.z - a.z) < 1.8) {
+      a.got = true; a.g.visible = false;
+      if (ST.rc !== stRain.id) { ST.rc = stRain.id; ST.rg = []; }
+      ST.rg.push(i); ST.arrows++;
+      stSave(); stSfx('pick'); stCardRender();
+      fwBurst(a.x, 1.2, a.z, 50, [1, 0.85, 0.35], 4, 0.9);
+      showToast('🏹 Stone Arrow! (' + ST.arrows + ')' + (ST.id ? '' : ' Hold Q to pierce yourself.'));
+    }
+  });
+}
+
+// ── Presence ────────────────────────────────────────────────────────────────
+function standWire(payload) {   // from maybeSyncPosition()
+  if (!ST.id || !stOut || !bbOutdoors()) return;
+  payload.sd = ST.id + '.' + ST.lv;
+  if (Date.now() - stMoveAt < 6000) payload.sm = stMoveAt;
+}
+function standRemote(av, sd, sm) {   // from the worldPresence listener
+  const m = typeof sd === 'string' ? /^([a-z]{2})\.(\d{1,2})$/.exec(sd) : null;
+  const id = m && ST_BY[m[1]] ? m[1] : '', lv = m ? Math.max(1, Math.min(ST_MAX_LV, Number(m[2]))) : 1;
+  let r = av.userData.st;
+  if (!id) { if (r) r.want = false; return; }
+  if (!r || r.id !== id) {
+    if (r) stDispose(r.g);
+    r = av.userData.st = stNewRig(id, lv);
+    r.seenSm = Number(sm) || 0;   // don't replay a move from before we saw them
+    av.add(r.g);
+  }
+  r.want = true; r.g.userData.lv = lv;
+  if (sm && sm !== r.seenSm) {
+    r.seenSm = sm;
+    if (Math.abs(Date.now() - sm) < 5000) { r.moveAt = performance.now(); if (id !== 'tw') stFx(ST_BY[id], r, lv, av, false); }
+  }
+}
+
+// ── Every frame (from tickFrame) ────────────────────────────────────────────
+let stHudSig = '';
+function standTick(dt) {
+  const now = performance.now(), time = now / 1000, outdoors = bbOutdoors();
+  if (stHold) stPierceTick(now);
+  if (stReel) stReelTick(now);
+  for (let i = stTimers.length - 1; i >= 0; i--) if (now >= stTimers[i].at) { const t = stTimers[i]; stTimers.splice(i, 1); try { t.fn(); } catch (e) {} }
+  stRainTick(dt, time);
+  // yours
+  if (ST.id && (!stLocal || stLocal.id !== ST.id)) { if (stLocal) stDispose(stLocal.g); stLocal = stNewRig(ST.id, ST.lv); stLocal.k = 0; stAnchor.add(stLocal.g); }
+  if (!ST.id && stLocal && stLocal.k < 0.02) { stDispose(stLocal.g); stLocal = null; }
+  if (stLocal) {
+    stLocal.want = !!ST.id && stOut && outdoors;
+    stAnchorSync();
+    if (!TS.held) stAnimate(stLocal, dt, time, camZoom < 1.2);
+    stAnchor.visible = outdoors;
+  }
+  // everyone else's (their avatar carries it; frozen with them while you hold time)
+  if (!TS.on) for (const id in remoteAvatars) {
+    const av = remoteAvatars[id], r = av.userData.st;
+    if (!r) continue;
+    stAnimate(r, dt, time, false);
+    if (!r.want && r.k < 0.02) { stDispose(r.g); av.userData.st = null; }
+  }
+  // move effects
+  for (let i = stBirds.length - 1; i >= 0; i--) {
+    const b = stBirds[i]; b.t += dt;
+    const p = b.owner.position, a = b.a0 + b.t * 2.6, R = 2.6 + b.lv * 0.12;
+    b.b.position.set(p.x + Math.cos(a) * R, (p.y || 0) + 3 + Math.sin(b.t * 3) * 0.4, p.z + Math.sin(a) * R);
+    b.b.rotation.y = -a;
+    const flap = Math.sin(b.t * 16) * 0.6; b.wings[0].rotation.z = flap; b.wings[1].rotation.z = -flap;
+    b.b.scale.setScalar(Math.min(1, b.t * 4, (b.dur - b.t) * 3) * (1.3 + b.lv * 0.04));
+    stSpark(b.b.position.x, b.b.position.y, b.b.position.z, (Math.random() - 0.5) * 1.5, -1 - Math.random(), (Math.random() - 0.5) * 1.5, [1, 0.45 + Math.random() * 0.3, 0.1], 0.9);
+    if (b.t >= b.dur) { fwBurst(b.b.position.x, b.b.position.y, b.b.position.z, 60, [1, 0.5, 0.15], 6, 1); scene.remove(b.b); stBirds.splice(i, 1); }
+  }
+  for (let i = stFlowers.length - 1; i >= 0; i--) {
+    const f = stFlowers[i]; f.t += dt;
+    const s = f.t < 0 ? 0.001 : Math.min(1, f.t * 2.5) * Math.min(1, (f.life - f.t) / 1.5) * f.s;
+    f.f.scale.setScalar(Math.max(0.001, s));
+    if (f.t >= f.life) { scene.remove(f.f); stFlowers.splice(i, 1); }
+  }
+  for (let i = stBombs.length - 1; i >= 0; i--) {
+    const b = stBombs[i]; b.t += dt;
+    b.m.scale.setScalar(3 + Math.sin(b.t * 18) * 0.5); b.m.material.opacity = 0.6 + Math.sin(b.t * 18) * 0.3;
+    if (b.t >= b.fuse) {
+      scene.remove(b.m);
+      fwBurst(b.x, b.y + 1, b.z, 120 + b.lv * 10, [1, 0.5, 0.85], 9, 1.4);
+      fwRocket(b.x, b.z, 0);
+      if (Math.hypot(localPos.x - b.x, localPos.z - b.z) < 40) stSfx('boom');
+      stBombs.splice(i, 1);
+    }
+  }
+  // the HUD line while your Stand is out
+  let hud = '';
+  if (stLocal && ST.id && stOut && outdoors) {
+    const d = ST_BY[ST.id], left = d.id === 'tw' ? Math.max(0, TS.readyAt - now) : Math.max(0, stReadyAt - now);
+    hud = `<b style="color:${stHex(d.col)}">${escHtml(d.name)}</b> · Lv ${ST.lv} · R ${escHtml(d.move)} ${left > 0 ? Math.ceil(left / 1000) + 's' : '<b style="color:#8dffb0">ready</b>'}`;
+  }
+  if (hud !== stHudSig) { stHudSig = hud; stEl.hud.innerHTML = hud; stEl.hud.style.display = hud ? 'block' : 'none'; }
+}
+function standBusy() { return stReel || stHold ? 'awakening your Stand' : ''; }
+
+// ── Admin: 🏹 Stands tab ────────────────────────────────────────────────────
+function stAdmBody() {
+  return `
+    <div class="lbl">Give a Stand</div>
+    <div class="row">${admInput('adm-stu', 'Username (leave blank for you)', 24)}</div>
+    <div class="row">${STANDS.map((s) => `<button class="b grow" data-act="stgive" data-v="${s.id}">${escHtml(s.name)}</button>`).join('')}</div>
+    <div class="lbl">Arrows</div>
+    <div class="row">
+      <button class="b grow" data-act="strain">🏹 Arrow rain</button>
+      <button class="b grow" data-act="strainstop">✋ Stop the rain</button>
+      <button class="b grow" data-act="starrows">+3 arrows (you)</button>
+    </div>
+    <div class="note">Arrow rain drops ${ST_RAIN_N} Stone Arrows within ~35 m of you for 3 minutes; everyone can pick up each one once.
+    ${stCloud ? '' : '<br>⚠️ The Firestore rules refused saving <b>stand</b> to your profile. Add \'stand\' to selfPrefFields and deploy them, or Stands only save per browser.'}</div>`;
+}
+function stAdmAct(act, v) {
+  if (act === 'stgive') {
+    if (!ST_BY[v]) return;
+    const u = String(admIn['adm-stu'] || '').trim().toLowerCase() || currentUser;
+    if (u === currentUser) {
+      ST.id = v; ST.lv = 1; if (!ST.dex.includes(v)) ST.dex.push(v);
+      stSave(); stOut = false; stToggle(true);
+      showToast('🏹 You now have ' + ST_BY[v].name + '.');
+      return;
+    }
+    admDo(runTransaction(db, async (tx) => {
+      const ref = doc(db, 'users', u), snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('!No player called ' + u + '.');
+      const cur = stClean(snap.data().stand);
+      cur.id = v; cur.lv = 1; if (!cur.dex.includes(v)) cur.dex.push(v);
+      cur.at = Date.now(); cur.gb = currentUser;
+      tx.update(ref, { stand: cur });
+    }).then(() => showToast('🏹 ' + u + ' now has ' + ST_BY[v].name + '.')));
+  } else if (act === 'strain') {
+    if (!bbOutdoors()) { showToast('Step outside first — the arrows land around you.'); return; }
+    admWrite({ arrowRain: { id: admId(), at: Date.now(), n: ST_RAIN_N, x: localPos.x, z: localPos.z, by: currentUser } });
+    showToast('🏹 Arrow rain for 3 minutes.');
+  } else if (act === 'strainstop') {
+    admWrite({ arrowRain: deleteField() });
+  } else if (act === 'starrows') {
+    ST.arrows += 3; stSave(); stCardRender();
+    showToast('🏹 +3 Stone Arrows (' + ST.arrows + ').');
+  }
+}
+
+standRainSet(FX.arrowRain);   // a rain that started before this part of the script ran
+ADM.st = true;
+
+// ── the demo world ─────────────────────────────────────────────────────────
+const ground = new THREE.Mesh(new THREE.CircleGeometry(70, 64), new THREE.MeshStandardMaterial({ color: 0x5f8a4a, roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; scene.add(ground);
+const road = new THREE.Mesh(new THREE.PlaneGeometry(7, 120), new THREE.MeshStandardMaterial({ color: 0x55575c, roughness: 1 }));
+road.rotation.x = -Math.PI / 2; road.position.y = 0.01; scene.add(road);
+const fwGeo = new THREE.BufferGeometry();
+fwGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FW_MAX * 3), 3));
+fwGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(FW_MAX * 3), 3));
+const fwPts = new THREE.Points(fwGeo, new THREE.PointsMaterial({ size: 0.14, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+fwPts.frustumCulled = false; scene.add(fwPts);
+// you, and a friend who has a Stand of their own
+const bodyGeo = new THREE.CapsuleGeometry(0.3, 1.1, 4, 10);
+const me = new THREE.Group(); const meBody = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0x3355aa })); meBody.position.y = 0.85; me.add(meBody);
+const nose = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff })); nose.position.set(0, 1.5, 0.3); me.add(nose);
+scene.add(me);
+const friend = new THREE.Group(); const fb = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0xaa5533 })); fb.position.y = 0.85; friend.add(fb);
+friend.position.set(7, 0, 9); friend.userData = {}; scene.add(friend); remoteAvatars.friend = friend;
+// berry bushes: walk up and press E
+const bushes = [];
+const bushMat = new THREE.MeshStandardMaterial({ color: 0x2f6b34, roughness: 0.9 });
+const berryOn = new THREE.MeshStandardMaterial({ color: 0xc9484c, emissive: 0xc9484c, emissiveIntensity: 1.2 });
+const berryOff = new THREE.MeshStandardMaterial({ color: 0x4a3234 });
+[[-12, 6], [-16, -8], [13, -6], [17, 14], [-9, 20], [6, -18]].forEach(([x, z]) => {
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 8), bushMat); b.position.y = 0.55; b.scale.y = 0.8; g.add(b);
+  const berries = [];
+  for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), berryOn); const a = i * 1.05; m.position.set(Math.cos(a) * 0.62, 0.55 + (i % 2) * 0.25, Math.sin(a) * 0.62); g.add(m); berries.push(m); }
+  scene.add(g); bushes.push({ g, x, z, berries, readyAt: 0 });
+});
+const GATHER_CD = 8000;   // 5 minutes in the game; quicker here
+function nearBush() { return bushes.find((b) => Math.hypot(b.x - localPos.x, b.z - localPos.z) < 2.2); }
+function gather() {
+  const b = nearBush(); if (!b) return false;
+  if (performance.now() < b.readyAt) { showToast('Still recovering. Try another bush.'); return true; }
+  b.readyAt = performance.now() + GATHER_CD; b.berries.forEach((m) => { m.material = berryOff; });
+  showToast('+40 pts gathered.');
+  standGatherRoll();
+  return true;
+}
+// camera: third person, drag to turn
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
+document.getElementById('view').appendChild(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+let camPitch = 0.32, dragging = false, lx = 0, ly = 0;
+renderer.domElement.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; domAudio(); });
+addEventListener('pointerup', () => { dragging = false; });
+addEventListener('pointermove', (e) => { if (!dragging) return; yaw -= (e.clientX - lx) * 0.006; camPitch = Math.max(0.05, Math.min(1.2, camPitch + (e.clientY - ly) * 0.004)); lx = e.clientX; ly = e.clientY; });
+addEventListener('wheel', (e) => { camZoom = Math.max(0, Math.min(10, camZoom + Math.sign(e.deltaY) * 0.8)); }, { passive: true });
+// keys, routed like the game's handler
+addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  domAudio();
+  if (ADM.stCard || ADM.stReel) { standKey(k, e); return; }
+  if (standKey(k, e)) return;
+  if (k === 'e' && !e.repeat) { gather(); return; }
+  if (k === 'v' && !e.repeat) { castFriend(); return; }
+  keys.add(k);
+});
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+addEventListener('blur', () => keys.clear());
+// the friend summons a Stand and uses its move now and then, like a real player would over presence
+const FR_IDS = ['sp', 'kq', 'ge', 'mr', 'hg'];
+let frIdx = 0, frLv = 5;
+standRemote(friend, FR_IDS[0] + '.' + frLv, 0);
+function castFriend() { standRemote(friend, FR_IDS[frIdx] + '.' + frLv, Date.now()); }
+setInterval(castFriend, 9000);
+setInterval(() => { frIdx = (frIdx + 1) % FR_IDS.length; standRemote(friend, FR_IDS[frIdx] + '.' + frLv, 0); }, 27000);
+// the buttons on the side
+document.getElementById('panel').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-do]'); if (!b) return;
+  domAudio();
+  const d = b.dataset.do;
+  if (d === 'arrows') { ST.arrows += 3; stSave(); stCardRender(); showToast('🏹 +3 Stone Arrows (' + ST.arrows + '). Hold Q to pierce yourself' + (ST.id ? ' (release your Stand on the K card first).' : '.')); }
+  if (d === 'ess') { ST.ess += 20; stSave(); stCardRender(); showToast('✨ +20 Essence. Press K to level up.'); }
+  if (d === 'rain') standRainSet({ id: 'rain' + Date.now(), at: Date.now(), n: 12, x: localPos.x, z: localPos.z, by: 'the demo' });
+  if (d === 'reset') { try { localStorage.removeItem(ST_KEY); } catch (e2) {} ST = stBlank(); stOut = false; stCardRender(); showToast('Started over: no Stand, no items.'); }
+  if (ST_BY[d]) { ST.id = d; ST.lv = Math.max(ST.lv, 1); if (!ST.dex.includes(d)) ST.dex.push(d); stSave(); stOut = false; stToggle(true); showToast('You now have ' + ST_BY[d].name + '. Press R for ' + ST_BY[d].move + '.'); }
+  b.blur();
+});
+document.getElementById('stands').innerHTML = STANDS.map((s) => '<button data-do="' + s.id + '" style="--c:#' + s.col.toString(16).padStart(6, '0') + '">' + escHtml(s.name) + '<small>' + ST_RARITY[s.rar].name + '</small></button>').join('');
+// every frame
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), mv = new THREE.Vector3();
+let last = performance.now();
+function frame() {
+  const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!ADM.stCard && !ADM.stReel) {
+    fwd.set(Math.sin(yaw), 0, Math.cos(yaw)); right.set(-Math.cos(yaw), 0, Math.sin(yaw)); mv.set(0, 0, 0);
+    if (keys.has('w') || keys.has('arrowup')) mv.add(fwd);
+    if (keys.has('s') || keys.has('arrowdown')) mv.sub(fwd);
+    if (keys.has('d') || keys.has('arrowright')) mv.add(right);
+    if (keys.has('a') || keys.has('arrowleft')) mv.sub(right);
+    if (mv.lengthSq()) { mv.normalize().multiplyScalar(6.5 * standMoveMul() * dt); localPos.add(mv); localPos.x = Math.max(-60, Math.min(60, localPos.x)); localPos.z = Math.max(-60, Math.min(60, localPos.z)); }
+  }
+  me.position.copy(localPos); me.rotation.y = yaw;
+  me.visible = camZoom > 0.6;
+  friend.rotation.y += dt * 0.25;
+  bushes.forEach((b) => { if (b.readyAt && now >= b.readyAt) { b.readyAt = 0; b.berries.forEach((m) => { m.material = berryOn; }); } });
+  document.getElementById('near').style.display = nearBush() ? 'block' : 'none';
+  standTick(dt);
+  for (let i = fwRockets.length - 1; i >= 0; i--) { const r = fwRockets[i]; r.t += dt; if (r.t < 0) continue; r.y += r.vy * dt; r.vy -= 9 * dt; if (r.t >= r.fuse) { fwBurst(r.x, r.y, r.z, 160, [[1, .35, .3], [1, .8, .3], [.4, 1, .5], [.4, .7, 1], [1, .45, .95]][Math.floor(Math.random() * 5)]); fwRockets.splice(i, 1); } }
+  const pos = fwGeo.attributes.position.array, col = fwGeo.attributes.color.array; let n = 0;
+  for (let i = fwParts.length - 1; i >= 0; i--) { const p = fwParts[i]; p.life -= dt; if (p.life <= 0) { fwParts[i] = fwParts[fwParts.length - 1]; fwParts.pop(); continue; } const dr = Math.exp(-1.6 * dt); p.vx *= dr; p.vy = p.vy * dr - 5 * dt; p.vz *= dr; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; const f = Math.min(1, p.life / p.max * 1.6); pos[n * 3] = p.x; pos[n * 3 + 1] = p.y; pos[n * 3 + 2] = p.z; col[n * 3] = p.r * f; col[n * 3 + 1] = p.g * f; col[n * 3 + 2] = p.b * f; n++; }
+  fwGeo.setDrawRange(0, n); fwGeo.attributes.position.needsUpdate = true; fwGeo.attributes.color.needsUpdate = true;
+  if (camZoom < 0.6) { camera.position.set(localPos.x, 1.7, localPos.z); camera.lookAt(localPos.x + Math.sin(yaw) * 5, 1.7 - camPitch * 2, localPos.z + Math.cos(yaw) * 5); }
+  else { const d = 2.5 + camZoom * 0.9; camera.position.set(localPos.x - Math.sin(yaw) * d * Math.cos(camPitch), 1.6 + d * Math.sin(camPitch), localPos.z - Math.cos(yaw) * d * Math.cos(camPitch)); camera.lookAt(localPos.x, 1.4, localPos.z); }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+
+setTimeout(() => showToast('Walk to a berry bush (WASD) and press E, or use the buttons on the left to skip ahead.'), 600);
+</script></body></html>
