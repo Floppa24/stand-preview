@@ -40,7 +40,8 @@
     <kbd>WASD</kbd><span>walk · drag to turn · scroll to zoom</span>
     <kbd>E</kbd><span>gather a berry bush (Arrow Fragments)</span>
     <kbd>Q</kbd><span>hold to pierce yourself · tap to summon</span>
-    <kbd>R</kbd><span>your Stand's move</span>
+    <kbd>R</kbd><span>your Stand's signature move</span>
+    <kbd>H</kbd><span>its second ability</span>
     <kbd>K</kbd><span>Stand card: level up, items, Stands found</span>
     <kbd>V</kbd><span>make the orange friend use their Stand</span>
   </div>
@@ -125,18 +126,31 @@ const ST_ODDS = [['common', 0.55], ['rare', 0.32], ['legendary', 0.13]];
 const ST_PITY_RARE = 10, ST_PITY_LEG = 40;   // a Rare or better at least every 10 rolls, a Legendary every 40
 const ST_PARTS = { 3: 'Part 3 · Stardust Crusaders', 4: 'Part 4 · Diamond is Unbreakable', 5: 'Part 5 · Golden Wind' };
 const STANDS = [
-  { id: 'mr', name: "Magician's Red", rar: 'common', part: 3, col: 0xff4a1c, acc: 0xffb347, extra: 'beak', st: 'B/B/C/B', move: 'Crossfire Hurricane', blurb: 'A fire-bird loops over your head, raining embers.', cd: 9000, dur: 3.2 },
-  { id: 'hg', name: 'Hierophant Green', rar: 'common', part: 3, col: 0x2fd67a, acc: 0xc8ffe0, extra: 'stripes', st: 'C/B/A/B', move: 'Emerald Splash', blurb: 'A spray of glowing emeralds bursts out in front of you.', cd: 7000, dur: 1.0 },
-  { id: 'sp', name: 'Star Platinum', rar: 'rare', part: 3, col: 0x7a5cff, acc: 0xffd36a, extra: 'band', st: 'A/A/C/A', move: 'ORA Rush', blurb: 'A blur of fists, and a burst of speed for you.', cd: 10000, dur: 2.2 },
-  { id: 'ge', name: 'Gold Experience', rar: 'rare', part: 5, col: 0xffcf3a, acc: 0x3fc46a, extra: 'ladybugs', st: 'C/A/E/D', move: 'Life Giver', blurb: 'Flowers spring up all around you.', cd: 12000, dur: 1.2 },
-  { id: 'kq', name: 'Killer Queen', rar: 'rare', part: 4, col: 0xff79c6, acc: 0xffffff, extra: 'ears', st: 'A/B/D/B', move: 'First Bomb', blurb: 'Touches the ground ahead. Then it goes off as fireworks.', cd: 10000, dur: 1.6 },
-  { id: 'tw', name: 'The World', rar: 'legendary', part: 3, col: 0xffc83a, acc: 0x37d18b, extra: 'crest', st: 'A/A/C/A', move: 'Za Warudo', blurb: 'Stops time. While The World is out, Z and R both cast Za Warudo.', cd: 0, dur: 1.4 },
+  { id: 'mr', name: "Magician's Red", rar: 'common', part: 3, col: 0xff4a1c, acc: 0xffb347, extra: 'beak', st: 'B/B/C/B', moves: [
+    { name: 'Crossfire Hurricane', blurb: 'Hurls a great ankh-shaped fireball.', cd: 8000, dur: 1.1, pose: 'cast' },
+    { name: 'Crossfire Hurricane Special', blurb: 'A spread of six smaller ankhs at once.', cd: 13000, dur: 1.1, pose: 'cast' }] },
+  { id: 'hg', name: 'Hierophant Green', rar: 'common', part: 3, col: 0x2fd67a, acc: 0xc8ffe0, extra: 'stripes', st: 'C/B/A/B', moves: [
+    { name: 'Emerald Splash', blurb: 'Fires a burst of emeralds from its hands.', cd: 6000, dur: 1.0, pose: 'cast' },
+    { name: '20 Metre Emerald Splash', blurb: 'Strings glowing threads 20 m out all around you, then bursts every one into emeralds.', cd: 20000, dur: 2.0, pose: 'cast' }] },
+  { id: 'sp', name: 'Star Platinum', rar: 'rare', part: 3, col: 0x7a5cff, acc: 0xffd36a, extra: 'band', st: 'A/A/C/A', moves: [
+    { name: 'ORA Rush', blurb: 'A barrage of fists too fast to see, and a burst of speed for you.', cd: 10000, dur: 2.2, pose: 'punch' },
+    { name: 'Star Finger', blurb: 'Its fingers shoot out several metres in an instant.', cd: 7000, dur: 0.6, pose: 'punch' }] },
+  { id: 'ge', name: 'Gold Experience', rar: 'rare', part: 5, col: 0xffcf3a, acc: 0x3fc46a, extra: 'ladybugs', st: 'C/A/E/D', moves: [
+    { name: 'Life Giver', blurb: 'Punches life into the ground: frogs hop out among flowers.', cd: 9000, dur: 1.0, pose: 'punch' },
+    { name: 'Grow', blurb: 'Makes a tree shoot up out of the ground in front of you.', cd: 14000, dur: 1.3, pose: 'cast' }] },
+  { id: 'kq', name: 'Killer Queen', rar: 'rare', part: 4, col: 0xff79c6, acc: 0xffffff, extra: 'ears', st: 'A/B/D/B', moves: [
+    { name: 'First Bomb', blurb: 'Press once to touch whatever is in front of you; press again to set it off.', cd: 8000, dur: 0.6, pose: 'punch' },
+    { name: 'Sheer Heart Attack', blurb: 'A little skull tank rolls after the nearest person yelling "LOOK HERE!", then blows up (harmlessly).', cd: 15000, dur: 0.8, pose: 'cast' }] },
+  { id: 'tw', name: 'The World', rar: 'legendary', part: 3, col: 0xffc83a, acc: 0x37d18b, extra: 'crest', st: 'A/A/C/A', moves: [
+    { name: 'Za Warudo', blurb: 'Stops time: the real Za Warudo, so everyone else outdoors freezes. Z casts it too while The World is out.', cd: 0, dur: 1.4, pose: 'punch' },
+    { name: 'Knife Throw', blurb: 'A fan of knives. Thrown while time is stopped, they hang in the air until it moves again.', cd: 6000, dur: 0.6, pose: 'cast' }] },
 ];
+for (const d of STANDS) { d.move = d.moves[0].name; d.blurb = d.moves[0].blurb; }   // R's name, for one-line mentions
 const ST_BY = Object.fromEntries(STANDS.map((s) => [s.id, s]));
 const ST_FRAGS = 5, ST_FRAG_CHANCE = 0.4, ST_MAX_LV = 10, ST_ESS_CAP = 40;   // Essence: 40 a day at most
 const ST_HOLD_MS = 1300, ST_RAIN_MS = 180000, ST_RAIN_N = 12;
 const stCost = (lv) => lv * 2;   // Essence for level lv → lv + 1 (90 in all to reach 10)
-const stCd = (def) => def.cd * (1 - (ST.lv - 1) * 0.05);   // level 10: 55% of the base cooldown
+const stCd = (mv) => mv.cd * (1 - (ST.lv - 1) * 0.05);   // level 10: 55% of the base cooldown
 const ST_KEY = 'hideout_stand_v1_' + currentUser;
 
 function stBlank() { return { id: '', lv: 1, ess: 0, frag: 0, arrows: 0, pr: 0, pl: 0, dex: [], ed: '', et: 0, rc: '', rg: [], at: 0 }; }
@@ -161,7 +175,8 @@ function stClean(o) {
 let ST = stBlank();
 try { const raw = localStorage.getItem(ST_KEY); if (raw) ST = stClean(JSON.parse(raw)); } catch (e) {}
 let stOut = false;                 // summoned right now (not saved: you call it again each visit)
-let stMoveAt = 0, stReadyAt = 0, stBurstUntil = 0;
+let stMoveAt = 0, stMoveK = 0, stMoveQ = null, stBurstUntil = 0;
+const stReady = [0, 0];   // when R and H are next ready (performance.now)
 let stCloud = true;                // false once the users-doc write is refused (rules not deployed yet)
 let stSaveT = 0;
 function stMirror() { try { localStorage.setItem(ST_KEY, JSON.stringify(ST)); } catch (e) {} }
@@ -326,7 +341,12 @@ function stSfx(kind) {
     else if (kind === 'dismiss') tone('sine', 700, 160, 0.3, 0.35);
     else if (kind === 'craft' || kind === 'pick') { tone('triangle', 1318, 1318, 0.4, 0.2); tone('triangle', 1760, 1760, 0.5, 0.16, 0.08); }
     else if (kind === 'level') [659, 880, 1175].forEach((f, i) => tone('triangle', f, f, 0.6, 0.2, i * 0.07));
-    else if (kind === 'mr') { tone('sawtooth', 110, 60, 1.6, 0.22); tone('sine', 300, 900, 0.6, 0.15); }
+    else if (kind === 'mr' || kind === 'mr2') { tone('sawtooth', 110, 60, 1.6, 0.22); tone('sine', 300, 900, 0.6, 0.15); if (kind === 'mr2') tone('sawtooth', 160, 70, 1.2, 0.15, 0.1); }
+    else if (kind === 'hg2') { tone('sine', 220, 880, 1, 0.12); for (let i = 0; i < 16; i++) tone('triangle', 1200 + Math.random() * 1600, 900, 0.14, 0.07, 5 + i * 0.04); }
+    else if (kind === 'sp2') { tone('sine', 400, 2400, 0.12, 0.25); tone('square', 180, 60, 0.15, 0.2, 0.12); }
+    else if (kind === 'tw2') for (let i = 0; i < 8; i++) tone('triangle', 2600, 1800, 0.08, 0.08, i * 0.03);
+    else if (kind === 'kq2') { tone('square', 90, 90, 0.9, 0.08); tone('triangle', 660, 520, 0.25, 0.12, 0.1); }
+    else if (kind === 'ge2') { tone('sine', 120, 260, 1.4, 0.3); [523, 659, 784].forEach((f, i) => tone('sine', f, f, 0.8, 0.1, 0.5 + i * 0.12)); }
     else if (kind === 'hg') for (let i = 0; i < 8; i++) tone('triangle', 1400 + Math.random() * 1400, 900, 0.12, 0.08, 0.2 + i * 0.05);
     else if (kind === 'sp') for (let i = 0; i < 18; i++) tone('square', 160 + Math.random() * 60, 70, 0.06, 0.16, i * 0.1);
     else if (kind === 'ge') [784, 988, 1175, 1568].forEach((f, i) => tone('sine', f, f, 0.9, 0.12, i * 0.12));
@@ -530,7 +550,7 @@ const _stOff = new THREE.Vector3();
 function stAnimate(r, dt, time, firstPerson) {
   const u = r.g.userData;
   r.k += ((r.want ? 1 : 0) - r.k) * Math.min(1, dt * 7);
-  const since = (performance.now() - r.moveAt) / 1000, act = r.moveAt > 0 && since < u.def.dur;
+  const since = (performance.now() - r.moveAt) / 1000, act = r.moveAt > 0 && since < (r.moveDur || 1);
   r.l += ((act ? 1 : 0) - r.l) * Math.min(1, dt * 10);
   if (firstPerson) _stOff.set(-1.35, -0.1, 2.0).lerp(_stOff.clone().set(0, -0.15, 2.5), r.l);
   else _stOff.set(-0.62, 0.15, -0.8).lerp(_stOff.clone().set(0, 0.05, 1.25), r.l);
@@ -542,11 +562,11 @@ function stAnimate(r, dt, time, firstPerson) {
   u.aura.scale.set(as, as * 1.3, 1);
   u.fig.position.y = Math.sin(time * 2.1 + r.ph) * 0.07;
   u.fig.rotation.y = Math.sin(time * 0.7 + r.ph) * 0.08;
-  const punch = act && (u.def.id === 'sp' || u.def.id === 'tw' || u.def.id === 'kq');
+  const punch = act && r.movePose === 'punch';
   if (u.rig) {
     if (r.k > 0.01) stPoseRig(u, punch ? 'punch' : act ? 'cast' : 'idle', time, r.ph);
   } else if (punch) {
-    const f = u.def.id === 'kq' ? 9 : 38;
+    const f = 38;
     u.armL.rotation.x = -1.45 + Math.sin(time * f) * 0.6;
     u.armR.rotation.x = -1.45 + Math.sin(time * f + Math.PI) * 0.6;
   } else if (act) {   // casting: both arms raised
@@ -568,95 +588,330 @@ function stNewRig(id, lv) {
 }
 
 // ── Moves ───────────────────────────────────────────────────────────────────
-const stTimers = [], stBirds = [], stFlowers = [], stBombs = [];
-const _stFwd = new THREE.Vector3(), _stPos = new THREE.Vector3();
-const stBirdMat = new THREE.MeshBasicMaterial({ color: 0xff7a2a, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-const stWingGeo = new THREE.PlaneGeometry(0.9, 0.34);
+// Two per Stand, as in the show: R is the signature move, H the second one.
+// Every one only changes what people see: nothing pushes, hurts or holds
+// another player (real fights belong in the Arena). Others replay a move from
+// presence: sm = when, sk = which (0 = R, 1 = H, 2 = Killer Queen's
+// detonation), sq = where it landed when that matters (Killer Queen).
+const stTimers = [], stFxObjs = [], stFlowers = [];
+const _stV = new THREE.Vector3(), _stD = new THREE.Vector3();
 const stFlowerGeo = { stem: new THREE.CylinderGeometry(0.014, 0.02, 0.34, 5), petal: new THREE.SphereGeometry(0.055, 7, 5), mid: new THREE.SphereGeometry(0.04, 7, 5) };
 const stStemMat = new THREE.MeshStandardMaterial({ color: 0x3f9a46, roughness: 0.8 });
 const stPetalMats = [0xff6fa8, 0xffe14a, 0xffffff, 0xb07aff, 0xff8a3a].map((c) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, roughness: 0.6 }));
 const stMidMat = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0xffa000, emissiveIntensity: 0.5 });
-const stBombMat = new THREE.MeshBasicMaterial({ color: 0xff79c6, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+const stGlow = (c, op = 0.95) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const stMat = {
+  fire: stGlow(0xff6a1a), fireCore: stGlow(0xffd36a), emerald: stGlow(0x2fff8a), thread: stGlow(0x3dff95, 0.7), pink: stGlow(0xff79c6),
+  finger: stGlow(0xb49cff), fist: stGlow(0x9a80ff, 0.55), fistGold: stGlow(0xffd36a, 0.55),
+  blade: new THREE.MeshStandardMaterial({ color: 0xdfe6ee, metalness: 0.9, roughness: 0.2, emissive: 0x334455, emissiveIntensity: 0.4 }),
+  hilt: new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: 0.7 }),
+  tank: new THREE.MeshStandardMaterial({ color: 0x5a5560, metalness: 0.6, roughness: 0.4 }),
+  skull: new THREE.MeshStandardMaterial({ color: 0xf2efe6, roughness: 0.5, emissive: 0xff79c6, emissiveIntensity: 0.15 }),
+  frog: new THREE.MeshStandardMaterial({ color: 0x4fbf3a, roughness: 0.55 }), eye: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 }),
+  bark: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.95 }), leaf: new THREE.MeshStandardMaterial({ color: 0x3f9a46, roughness: 0.8, emissive: 0x1a4a1a, emissiveIntensity: 0.3 }),
+};
+const stFxGeo = {
+  ankhLoop: new THREE.TorusGeometry(0.42, 0.12, 8, 22), ankhBar: new THREE.BoxGeometry(1.5, 0.24, 0.24), ankhStem: new THREE.BoxGeometry(0.26, 1.3, 0.24),
+  gem: new THREE.OctahedronGeometry(0.09, 0), fist: new THREE.SphereGeometry(0.14, 8, 6), beam: new THREE.CylinderGeometry(0.05, 0.05, 1, 6),
+  thread: new THREE.CylinderGeometry(0.03, 0.03, 1, 4), blade: new THREE.BoxGeometry(0.035, 0.02, 0.34), hilt: new THREE.BoxGeometry(0.04, 0.035, 0.13),
+  tank: new THREE.BoxGeometry(0.5, 0.26, 0.62), tread: new THREE.BoxGeometry(0.12, 0.18, 0.7), skull: new THREE.SphereGeometry(0.17, 12, 9),
+  frog: new THREE.SphereGeometry(0.16, 10, 7), frogEye: new THREE.SphereGeometry(0.045, 6, 5),
+  trunk: new THREE.CylinderGeometry(0.12, 0.2, 2.6, 8), crown: new THREE.IcosahedronGeometry(1, 1),
+};
+const stLookTex = makeCanvasTexture(256, (ctx, s) => {
+  ctx.font = 'bold 44px "Cormorant Garamond", serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 8; ctx.strokeStyle = '#3a0b25'; ctx.strokeText('LOOK HERE!', s / 2, s / 2); ctx.fillStyle = '#ffd6ee'; ctx.fillText('LOOK HERE!', s / 2, s / 2);
+});
 function stLater(ms, fn) { stTimers.push({ at: performance.now() + ms, fn }); }
 function stSpark(x, y, z, vx, vy, vz, rgb, life) {
   if (fwParts.length < FW_MAX) fwParts.push({ x, y, z, vx, vy, vz, r: rgb[0], g: rgb[1], b: rgb[2], life, max: life });
 }
-// Plays a move's effect around `owner` (your anchor, or their avatar). `mine` is
-// only true for your own cast: the speed burst and the ORA text are just yours.
-function stFx(def, r, lv, owner, mine) {
-  const o = owner.position, ry = owner.rotation.y;
-  _stFwd.set(Math.sin(ry), 0, Math.cos(ry));
-  const fx = _stFwd.x, fz = _stFwd.z, oy = o.y || 0;
-  if (def.id === 'mr') {
-    const b = new THREE.Group();
-    const body = new THREE.Mesh(stGeo.head, stBirdMat); body.scale.set(0.9, 0.8, 1.9); b.add(body);
-    const wl = new THREE.Mesh(stWingGeo, stBirdMat); wl.position.x = 0.5; const wr = new THREE.Mesh(stWingGeo, stBirdMat); wr.position.x = -0.5;
-    const wings = [new THREE.Group(), new THREE.Group()]; wings[0].add(wl); wings[1].add(wr); b.add(wings[0], wings[1]);
-    const beak = new THREE.Mesh(stGeo.cone, stBirdMat); beak.rotation.x = Math.PI / 2; beak.position.z = 0.36; b.add(beak);
-    scene.add(b);
-    stBirds.push({ b, wings, owner, t: 0, dur: def.dur, a0: ry, lv });
-  } else if (def.id === 'hg') {
-    stLater(220, () => {
-      const n = 22 + lv * 3, x = o.x + fx * 0.9, z = o.z + fz * 0.9;
-      for (let i = 0; i < n; i++) {
-        const sp = 13 + Math.random() * 6, side = (Math.random() - 0.5) * 7;
-        stSpark(x, oy + 1.35, z, fx * sp - fz * side, 0.5 + Math.random() * 3.5, fz * sp + fx * side, [0.25, 1, 0.55], 1 + Math.random() * 0.4);
-      }
-    });
-  } else if (def.id === 'sp' || def.id === 'tw') {
-    for (let i = 0; i < (def.id === 'sp' ? 18 : 8); i++) stLater(120 + i * 105, () => {
-      const ry2 = owner.rotation.y, x = owner.position.x + Math.sin(ry2) * 2.1 + (Math.random() - 0.5) * 0.7, z = owner.position.z + Math.cos(ry2) * 2.1 + (Math.random() - 0.5) * 0.7;
-      fwBurst(x, (owner.position.y || 0) + 1.2 + (Math.random() - 0.5) * 0.6, z, 7, def.id === 'sp' ? [1, 1, 1] : [1, 0.85, 0.35], 3, 0.3);
-    });
-    if (mine && def.id === 'sp') {
-      stBurstUntil = performance.now() + 2200 + lv * 100;
-      for (let i = 0; i < 16; i++) stLater(i * 110, () => {
-        const s = document.createElement('span'); s.textContent = 'ORA';
-        s.style.left = (15 + Math.random() * 65) + '%'; s.style.top = (18 + Math.random() * 55) + '%';
-        stEl.ora.appendChild(s); setTimeout(() => s.remove(), 600);
-      });
-    }
-  } else if (def.id === 'ge') {
-    const n = 10 + lv;
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, d = 1.1 + Math.random() * (2.4 + lv * 0.2);
-      const f = new THREE.Group();
-      f.add(new THREE.Mesh(stFlowerGeo.stem, stStemMat)).position.y = 0.17;
-      const pm = stPetalMats[Math.floor(Math.random() * stPetalMats.length)];
-      for (let p = 0; p < 5; p++) { const m = new THREE.Mesh(stFlowerGeo.petal, pm); m.position.set(Math.cos(p * 1.2566) * 0.065, 0.36, Math.sin(p * 1.2566) * 0.065); m.scale.y = 0.5; f.add(m); }
-      f.add(new THREE.Mesh(stFlowerGeo.mid, stMidMat)).position.y = 0.37;
-      f.position.set(o.x + Math.cos(a) * d, oy, o.z + Math.sin(a) * d);
-      f.rotation.y = Math.random() * 6; f.scale.setScalar(0.001);
-      scene.add(f);
-      stFlowers.push({ f, t: -i * 0.05, life: 20, s: 1 + Math.random() * 0.6 });
-      while (stFlowers.length > 90) scene.remove(stFlowers.shift().f);
-    }
-    for (let i = 0; i < 30; i++) stSpark(o.x, oy + 0.3, o.z, (Math.random() - 0.5) * 6, 3 + Math.random() * 3, (Math.random() - 0.5) * 6, [1, 0.9, 0.3], 1.2);
-  } else if (def.id === 'kq') {
-    const x = o.x + fx * 4.5, z = o.z + fz * 4.5;
-    const m = new THREE.Mesh(stGeo.ring, stBombMat); m.rotation.x = Math.PI / 2; m.position.set(x, oy + 0.06, z); m.scale.setScalar(3);
-    scene.add(m);
-    stBombs.push({ m, t: 0, fuse: 1.4, x, y: oy, z, lv });
+// An effect object in the world. update(fx, dt) returns true when it's finished.
+function stAddFx(obj, update, extra) {
+  obj.userData.stIgnore = true;
+  obj.traverse((o) => { o.frustumCulled = false; });
+  scene.add(obj);
+  const fx = Object.assign({ obj, t: 0, update }, extra);
+  stFxObjs.push(fx);
+  return fx;
+}
+function stFrame(owner) {   // where the caster is and which way they face
+  const ry = owner.rotation.y, p = owner.position;
+  return { x: p.x, y: p.y || 0, z: p.z, fx: Math.sin(ry), fz: Math.cos(ry), ry };
+}
+// Has the owner's time stop got the world held still? (Their knives wait in the air.)
+function stTimeHeld(owner) { return owner === stAnchor ? TS.on : !!(owner.userData && tsRemoteActive(owner.userData, performance.now())); }
+// What Killer Queen touches: the first thing up to 8 m ahead, or the ground there.
+const stRay = new THREE.Raycaster();
+function stIgnored(o) { for (let i = 0; o && i < 12; i++, o = o.parent) if (o.userData && (o.userData.stIgnore || o.userData.rig)) return true; return false; }
+function stAim(F) {
+  stRay.set(_stV.set(F.x, F.y + 1.3, F.z), _stD.set(F.fx, -0.16, F.fz).normalize());
+  stRay.far = 8;
+  stRay.camera = camera;   // sprites (name tags) need it to be tested
+  try {
+    for (const h of stRay.intersectObjects(scene.children, true)) if (h.object.isMesh && h.object.visible && !stIgnored(h.object)) return h.point.clone();
+  } catch (e) {}
+  return new THREE.Vector3(F.x + F.fx * 4.5, F.y + 0.05, F.z + F.fz * 4.5);
+}
+
+function stOra(n) {
+  for (let i = 0; i < n; i++) stLater(i * 110, () => {
+    const s = document.createElement('span'); s.textContent = 'ORA';
+    s.style.left = (15 + Math.random() * 65) + '%'; s.style.top = (18 + Math.random() * 55) + '%';
+    stEl.ora.appendChild(s); setTimeout(() => s.remove(), 600);
+  });
+}
+function stFlowerRing(x, y, z, n, rad) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, d = 0.4 + Math.random() * rad;
+    const f = new THREE.Group();
+    f.add(new THREE.Mesh(stFlowerGeo.stem, stStemMat)).position.y = 0.17;
+    const pm = stPetalMats[Math.floor(Math.random() * stPetalMats.length)];
+    for (let p = 0; p < 5; p++) { const m = new THREE.Mesh(stFlowerGeo.petal, pm); m.position.set(Math.cos(p * 1.2566) * 0.065, 0.36, Math.sin(p * 1.2566) * 0.065); m.scale.y = 0.5; f.add(m); }
+    f.add(new THREE.Mesh(stFlowerGeo.mid, stMidMat)).position.y = 0.37;
+    f.position.set(x + Math.cos(a) * d, y, z + Math.sin(a) * d);
+    f.rotation.y = Math.random() * 6; f.scale.setScalar(0.001);
+    scene.add(f);
+    stFlowers.push({ f, t: -i * 0.05, life: 20, s: 1 + Math.random() * 0.6 });
+    while (stFlowers.length > 90) scene.remove(stFlowers.shift().f);
   }
 }
-function stMove() {
+function stAnkh(scale) {
+  const g = new THREE.Group();
+  for (const [mat, k] of [[stMat.fire, 1], [stMat.fireCore, 0.6]]) {
+    const loop = new THREE.Mesh(stFxGeo.ankhLoop, mat); loop.position.y = 0.62; loop.scale.set(k, k * 1.25, k);
+    const bar = new THREE.Mesh(stFxGeo.ankhBar, mat); bar.scale.set(k, k, k);
+    const stem = new THREE.Mesh(stFxGeo.ankhStem, mat); stem.position.y = -0.62; stem.scale.set(k, k, k);
+    g.add(loop, bar, stem);
+  }
+  g.scale.setScalar(scale);
+  return g;
+}
+function stFireAnkh(F, yaw0, scale, speed, life, up) {
+  const g = stAnkh(scale);
+  const fx = Math.sin(yaw0), fz = Math.cos(yaw0);
+  g.position.set(F.x + fx * 1.4, F.y + 1.45, F.z + fz * 1.4); g.rotation.y = yaw0;
+  stAddFx(g, (o, dt) => {
+    o.obj.position.x += fx * speed * dt; o.obj.position.z += fz * speed * dt; o.obj.position.y += up * dt;
+    o.obj.scale.setScalar(scale * (1 + Math.sin(o.t * 40) * 0.06));
+    const p = o.obj.position;
+    for (let i = 0; i < 3; i++) stSpark(p.x + (Math.random() - 0.5) * scale, p.y + (Math.random() - 0.5) * scale * 1.6, p.z, (Math.random() - 0.5) * 2, 1 + Math.random() * 2, (Math.random() - 0.5) * 2, [1, 0.4 + Math.random() * 0.4, 0.1], 0.7);
+    if (o.t < life) return false;
+    fwBurst(p.x, p.y, p.z, Math.round(70 * scale), [1, 0.5, 0.15], 6 * scale, 1);
+    return true;
+  });
+}
+function stGem(x, y, z, vx, vy, vz, life) {
+  const m = new THREE.Mesh(stFxGeo.gem, stMat.emerald);
+  m.position.set(x, y, z);
+  stAddFx(m, (o, dt) => {
+    o.vy -= 4 * dt;
+    o.obj.position.x += o.vx * dt; o.obj.position.y += o.vy * dt; o.obj.position.z += o.vz * dt;
+    o.obj.rotation.x += dt * 9; o.obj.rotation.y += dt * 7;
+    if (o.t < life && o.obj.position.y > 0.05) return false;
+    stSpark(o.obj.position.x, Math.max(0.1, o.obj.position.y), o.obj.position.z, 0, 1.5, 0, [0.3, 1, 0.6], 0.5);
+    return true;
+  }, { vx, vy, vz });
+}
+// Killer Queen's mark on whatever it touched, one per owner.
+const stKqMarks = new Map();   // owner -> { p, m, at }
+function stKqTouch(owner, p) {
+  stKqClear(owner);
+  const m = new THREE.Mesh(stGeo.ring, stMat.pink); m.position.copy(p); m.rotation.x = Math.PI / 2;
+  const fx = stAddFx(m, (o) => { o.obj.scale.setScalar(1.6 + Math.sin(o.t * 6) * 0.25); o.obj.material.opacity = 0.5 + Math.sin(o.t * 6) * 0.3; return o.done || o.t > 30; });
+  stKqMarks.set(owner, { p: p.clone(), fx, at: performance.now() });
+  stSpark(p.x, p.y + 0.2, p.z, 0, 1, 0, [1, 0.5, 0.85], 0.6);
+}
+function stKqClear(owner) { const k = stKqMarks.get(owner); if (k) { k.fx.done = true; stKqMarks.delete(owner); } }
+function stKqBoom(owner, p) {
+  stKqClear(owner);
+  stSfx('kq');
+  stLater(160, () => {
+    fwBurst(p.x, p.y + 0.6, p.z, 180, [1, 0.5, 0.85], 10, 1.4);
+    fwBurst(p.x, p.y + 0.6, p.z, 90, [1, 0.85, 0.5], 5, 1.1);
+    if (Math.hypot(localPos.x - p.x, localPos.z - p.z) < 45) stSfx('boom');
+  });
+}
+// Sheer Heart Attack: picks the nearest player who isn't its owner and trundles after them.
+function stSheer(F, owner) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(stFxGeo.tank, stMat.tank)).position.y = 0.2;
+  for (const s of [1, -1]) g.add(new THREE.Mesh(stFxGeo.tread, stMat.tank)).position.set(s * 0.3, 0.1, 0);
+  g.add(new THREE.Mesh(stFxGeo.skull, stMat.skull)).position.set(0, 0.38, 0.22);
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: stLookTex, transparent: true, depthWrite: false }));
+  tag.scale.set(1.6, 1.6, 1); tag.position.y = 1.05; g.add(tag);
+  g.position.set(F.x + F.fx * 1.6, F.y, F.z + F.fz * 1.6); g.rotation.y = F.ry;
+  const targets = [];
+  if (owner !== stAnchor) targets.push(stAnchor);
+  for (const id in remoteAvatars) { const av = remoteAvatars[id]; if (av !== owner && av.parent === scene) targets.push(av); }
+  let tgt = null, best = 30;
+  for (const t of targets) { const d = Math.hypot(t.position.x - g.position.x, t.position.z - g.position.z); if (d < best) { best = d; tgt = t; } }
+  stAddFx(g, (o, dt) => {
+    const p = o.obj.position;
+    let dx = Math.sin(o.obj.rotation.y), dz = Math.cos(o.obj.rotation.y);
+    if (tgt) { const tx = tgt.position.x - p.x, tz = tgt.position.z - p.z, d = Math.hypot(tx, tz); if (d < 1.2) o.t = 99; else { dx = tx / d; dz = tz / d; o.obj.rotation.y = Math.atan2(dx, dz); } }
+    p.x += dx * 6 * dt; p.z += dz * 6 * dt; p.y = (tgt ? tgt.position.y || 0 : F.y) + Math.abs(Math.sin(o.t * 18)) * 0.04;
+    tag.material.opacity = 0.75 + Math.sin(o.t * 10) * 0.25;
+    if (o.t < 6) return false;
+    fwBurst(p.x, p.y + 0.5, p.z, 160, [1, 0.55, 0.3], 9, 1.3);
+    if (Math.hypot(localPos.x - p.x, localPos.z - p.z) < 45) stSfx('boom');
+    tag.material.dispose();
+    return true;
+  });
+}
+function stFrog(x, y, z) {
+  const g = new THREE.Group();
+  const b = g.add(new THREE.Mesh(stFxGeo.frog, stMat.frog)).children[0]; b.scale.set(1, 0.7, 1.25); b.position.y = 0.11;
+  for (const s of [1, -1]) g.add(new THREE.Mesh(stFxGeo.frogEye, stMat.eye)).position.set(s * 0.08, 0.22, 0.13);
+  g.position.set(x, y, z); g.rotation.y = Math.random() * 6.3;
+  stAddFx(g, (o, dt) => {
+    const hop = (o.t % 0.7) / 0.7, p = o.obj.position;
+    if (hop < 0.45) { p.x += Math.sin(o.obj.rotation.y) * 2.2 * dt; p.z += Math.cos(o.obj.rotation.y) * 2.2 * dt; p.y = y + Math.sin(hop / 0.45 * Math.PI) * 0.35; }
+    else { p.y = y; if (Math.random() < dt * 2) o.obj.rotation.y += (Math.random() - 0.5) * 2; }
+    o.obj.scale.setScalar(Math.min(1, o.t * 4, (12 - o.t) / 0.6));
+    return o.t > 12;
+  });
+}
+const stTrees = [];
+function stTree(x, y, z) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(stFxGeo.trunk, stMat.bark)).position.y = 1.3;
+  for (const [ox, oy, oz, s] of [[0, 3.0, 0, 1.25], [0.6, 2.6, 0.2, 0.85], [-0.55, 2.7, -0.2, 0.9], [0.1, 3.6, -0.3, 0.8]]) { const c = new THREE.Mesh(stFxGeo.crown, stMat.leaf); c.position.set(ox, oy, oz); c.scale.setScalar(s); g.add(c); }
+  g.position.set(x, y, z); g.scale.setScalar(0.001);
+  const fx = stAddFx(g, (o) => {
+    const k = Math.min(1, o.t / 1.4), e = 1 - Math.pow(1 - k, 3), out = Math.min(1, (30 - o.t) / 1.5);
+    o.obj.scale.set(Math.max(0.001, e * out), Math.max(0.001, e * out * (1 + (1 - e) * 0.4)), Math.max(0.001, e * out));
+    if (o.t < 1.4 && Math.random() < 0.5) stSpark(x + (Math.random() - 0.5), y + e * 3, z + (Math.random() - 0.5), (Math.random() - 0.5) * 3, 2, (Math.random() - 0.5) * 3, [0.5, 1, 0.4], 0.8);
+    return o.done || o.t > 30;
+  });
+  stTrees.push(fx);
+  while (stTrees.length > 4) stTrees.shift().done = true;
+}
+function stThreads(F, lv) {
+  const n = 22 + lv, hx = F.x + F.fx * 0.6, hy = F.y + 1.35, hz = F.z + F.fz * 0.6, ends = [];
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.1, R = 20;
+    const e = new THREE.Vector3(F.x + Math.cos(a) * R, F.y + 0.4 + Math.random() * 2.2, F.z + Math.sin(a) * R);
+    const m = new THREE.Mesh(stFxGeo.thread, stMat.thread);
+    g.add(m); ends.push({ e, m });
+  }
+  const from = new THREE.Vector3(hx, hy, hz), dir = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  stAddFx(g, (o) => {
+    const k = Math.min(1, o.t / 0.9);
+    for (const { e, m } of ends) {
+      dir.subVectors(e, from); const L = dir.length() * k;
+      m.position.copy(from).addScaledVector(dir.normalize(), L / 2);
+      m.quaternion.setFromUnitVectors(up, dir);
+      m.scale.set(1, Math.max(0.01, L), 1);
+    }
+    stMat.thread.opacity = 0.45 + Math.sin(o.t * 8) * 0.25;
+    if (o.t < 5) return false;
+    stMat.thread.opacity = 0.7;
+    for (const { e } of ends) {
+      for (let j = 0; j < 3; j++) stGem(e.x, e.y, e.z, (from.x - e.x) * 0.25 + (Math.random() - 0.5) * 3, 2 + Math.random() * 2, (from.z - e.z) * 0.25 + (Math.random() - 0.5) * 3, 1.4);
+      stSpark(e.x, e.y, e.z, 0, 2, 0, [0.3, 1, 0.6], 0.8);
+    }
+    return true;
+  });
+}
+function stKnives(F, lv, owner) {
+  const n = 7 + Math.floor(lv / 2), hy = F.y + 1.4;
+  for (let i = 0; i < n; i++) {
+    const a = F.ry + (i / (n - 1) - 0.5) * 0.7, dx = Math.sin(a), dz = Math.cos(a), dy = (Math.random() - 0.5) * 0.12;
+    const k = new THREE.Group();
+    k.add(new THREE.Mesh(stFxGeo.blade, stMat.blade)).position.z = 0.1;
+    k.add(new THREE.Mesh(stFxGeo.hilt, stMat.hilt)).position.z = -0.14;
+    k.position.set(F.x + dx * 1.2, hy + (Math.random() - 0.5) * 0.3, F.z + dz * 1.2);
+    k.lookAt(k.position.x + dx, k.position.y + dy, k.position.z + dz);
+    stAddFx(k, (o, dt) => {
+      // In stopped time a thrown knife only gets a moment's flight, then waits in the air.
+      if (stTimeHeld(owner) && o.flown > 0.22) { o.obj.rotation.z += dt * 0; return o.t > 25; }
+      o.flown += dt;
+      o.obj.position.x += dx * 24 * dt; o.obj.position.z += dz * 24 * dt; o.obj.position.y += dy * 24 * dt;
+      return o.flown > 1.4;
+    }, { flown: 0 });
+  }
+}
+
+// Plays move `k` of Stand `def` around `owner` (your anchor, or their avatar).
+// `mine` is only true for your own cast: the speed burst and the ORA text are
+// just yours. `q` is where Killer Queen's touch / detonation landed.
+function stFx(def, r, lv, owner, mine, k, q) {
+  const F = stFrame(owner);
+  const hand = () => { const G = stFrame(owner); return [G.x + G.fx * 1.3, G.y + 1.4, G.z + G.fz * 1.3, G]; };
+  const id = def.id;
+  if (id === 'sp' && k === 0) {   // ORA rush: afterimages of fists, and the impacts
+    for (let i = 0; i < 40; i++) stLater(60 + i * 50, () => {
+      const [x, y, z, G] = hand(), side = (Math.random() - 0.5) * 1.1;
+      const m = new THREE.Mesh(stFxGeo.fist, Math.random() < 0.8 ? stMat.fist : stMat.fistGold);
+      m.position.set(x - G.fz * side, y + (Math.random() - 0.5) * 0.7, z + G.fx * side); m.scale.set(1, 1, 1.4); m.rotation.y = G.ry;
+      stAddFx(m, (o, dt) => { o.obj.position.x += G.fx * 9 * dt; o.obj.position.z += G.fz * 9 * dt; o.obj.material.opacity = 0.55; return o.t > 0.12; });
+      if (i % 3 === 0) fwBurst(x + G.fx * 0.9 - G.fz * side, y, z + G.fz * 0.9 + G.fx * side, 6, [1, 1, 1], 3, 0.25);
+    });
+    if (mine) { stBurstUntil = performance.now() + 2200 + lv * 100; stOra(16); }
+  } else if (id === 'sp') {   // Star Finger
+    const [x, y, z, G] = hand(), beam = new THREE.Mesh(stFxGeo.beam, stMat.finger);
+    beam.rotation.x = Math.PI / 2; beam.rotation.y = 0;
+    const holder = new THREE.Group(); holder.add(beam); holder.position.set(x, y + 0.1, z); holder.rotation.y = G.ry;
+    const reach = 7 + lv * 0.2;
+    stAddFx(holder, (o) => {
+      const L = o.t < 0.12 ? reach * o.t / 0.12 : o.t < 0.4 ? reach : reach * Math.max(0, 1 - (o.t - 0.4) / 0.15);
+      beam.scale.set(1, Math.max(0.01, L), 1); beam.position.z = L / 2;
+      if (!o.hit && o.t >= 0.12) { o.hit = true; fwBurst(x + G.fx * reach, y + 0.1, z + G.fz * reach, 40, [0.8, 0.7, 1], 5, 0.5); }
+      return o.t > 0.55;
+    });
+  } else if (id === 'tw' && k === 1) stKnives(F, lv, owner);
+  else if (id === 'tw') {   // Za Warudo's own effects come from the time stop; the Stand just strikes a pose
+    for (let i = 0; i < 6; i++) stLater(100 + i * 120, () => { const [x, y, z] = hand(); fwBurst(x, y, z, 6, [1, 0.85, 0.35], 3, 0.3); });
+  } else if (id === 'kq' && k === 1) stSheer(F, owner);
+  else if (id === 'kq' && k === 2) stKqBoom(owner, q || (stKqMarks.get(owner) || {}).p || stAim(F));
+  else if (id === 'kq') stKqTouch(owner, q || stAim(F));
+  else if (id === 'ge' && k === 0) {   // Life Giver: the ground it punches comes alive
+    const x = F.x + F.fx * 2.4, z = F.z + F.fz * 2.4;
+    stLater(250, () => {
+      fwBurst(x, F.y + 0.3, z, 50, [1, 0.9, 0.3], 4, 0.8);
+      for (let i = 0; i < 3 + Math.floor(lv / 3); i++) stFrog(x + (Math.random() - 0.5), F.y, z + (Math.random() - 0.5));
+      stFlowerRing(x, F.y, z, 8 + lv, 1.6 + lv * 0.15);
+    });
+  } else if (id === 'ge') stLater(200, () => stTree(F.x + F.fx * 4, F.y, F.z + F.fz * 4));
+  else if (id === 'mr' && k === 0) stLater(250, () => { const G = stFrame(owner); stFireAnkh(G, G.ry, 1 + lv * 0.04, 17, 1.5, 0); });
+  else if (id === 'mr') stLater(250, () => { const G = stFrame(owner); for (let i = 0; i < 6; i++) stFireAnkh(G, G.ry + (i / 5 - 0.5) * 1.1, 0.45, 15, 1.3, 1.2); });
+  else if (id === 'hg' && k === 0) stLater(200, () => {
+    const [x, y, z, G] = hand();
+    for (let i = 0; i < 18 + lv * 2; i++) { const sp = 12 + Math.random() * 6, side = (Math.random() - 0.5) * 6; stGem(x, y, z, G.fx * sp - G.fz * side, 0.5 + Math.random() * 3, G.fz * sp + G.fx * side, 1.3); }
+  });
+  else if (id === 'hg') stThreads(F, lv);
+}
+function stMove(k) {
   if (!ST.id) return;
   if (!bbOutdoors()) { showToast('Stands only come out in the open world.'); return; }
   if (TS.held || DOM.caught) return;
-  const def = ST_BY[ST.id], now = performance.now();
+  const def = ST_BY[ST.id], mv = def.moves[k], now = performance.now();
   if (!stOut) stToggle(true);
-  if (def.id === 'tw') {   // The World's move *is* Za Warudo, with Za Warudo's own cooldown
+  if (def.id === 'tw' && k === 0) {   // The World's R *is* Za Warudo, with Za Warudo's own cooldown
     const was = TS.on; tsTry();
-    if (!was && TS.on) { stMoveAt = Date.now(); if (stLocal) stLocal.moveAt = now; lastPresenceSig = ''; lastSync = 0; }
+    if (!was && TS.on) stCast(def, 0, now, null);
     return;
   }
-  if (now < stReadyAt) { showToast(def.move + ' needs ' + Math.ceil((stReadyAt - now) / 1000) + 's.'); return; }
-  stReadyAt = now + stCd(def);
-  stMoveAt = Date.now(); lastPresenceSig = ''; lastSync = 0;   // tell everyone right away
-  if (stLocal) stLocal.moveAt = now;
-  stFx(def, stLocal, ST.lv, stAnchor, true);
-  stSfx(def.id);
+  if (now < stReady[k]) { showToast(mv.name + ' needs ' + Math.ceil((stReady[k] - now) / 1000) + 's.'); return; }
+  let kk = k, q = null;
+  if (def.id === 'kq' && k === 0) {   // First Bomb: touch, then press again to set it off
+    const mark = stKqMarks.get(stAnchor);
+    if (mark) { kk = 2; q = mark.p; stReady[0] = now + stCd(mv); }
+    else { q = stAim(stFrame(stAnchor)); stReady[0] = now + 1200; showToast('Killer Queen has already touched that. Press R to set it off.'); }
+  } else stReady[k] = now + stCd(mv);
+  stCast(def, kk, now, q);
 }
+function stCast(def, kk, now, q) {
+  stMoveAt = Date.now(); stMoveK = kk; stMoveQ = q ? [Math.round(q.x * 100) / 100, Math.round(q.y * 100) / 100, Math.round(q.z * 100) / 100] : null;
+  lastPresenceSig = ''; lastSync = 0;   // tell everyone right away
+  const mv = def.moves[Math.min(kk, 1)];
+  if (stLocal) { stLocal.moveAt = now; stLocal.moveDur = kk === 2 ? 0.4 : mv.dur; stLocal.movePose = kk === 2 ? 'cast' : mv.pose; }
+  stFx(def, stLocal, ST.lv, stAnchor, true, kk, q);
+  stSfx(def.id + (kk === 1 ? '2' : ''));
+}
+
 function standMoveMul() { return performance.now() < stBurstUntil ? 1.6 : 1; }
 function standHasWorld() { return ST.id === 'tw' && stOut; }
 function stToggle(on) {
@@ -734,8 +989,8 @@ function stReveal(s) {
     <div class="nm" style="color:${stHex(s.col)};text-shadow:0 0 30px ${stHex(s.col)}88">${escHtml(s.name)}</div>
     <div class="pt">${ST_PARTS[s.part]}</div>
     <div class="stats"><div>Power<b>${P}</b></div><div>Speed<b>${S}</b></div><div>Range<b>${R}</b></div><div>Durability<b>${D}</b></div></div>
-    <div class="mv"><b>${escHtml(s.move)}</b> — ${escHtml(s.blurb)}</div>
-    <div class="go">Q SUMMON · R ${escHtml(s.move.toUpperCase())} · K STAND CARD<br>click or press any key</div>`;
+    ${s.moves.map((m, i) => `<div class="mv"><b>${i ? 'H' : 'R'} · ${escHtml(m.name)}</b> — ${escHtml(m.blurb)}</div>`).join('')}
+    <div class="go">Q SUMMON · R / H MOVES · K STAND CARD<br>click or press any key</div>`;
   stEl.rv.className = 'rv show';
   stSfx(s.rar === 'legendary' ? 'legend' : 'reveal');
   stReel.shownAt = performance.now();
@@ -766,7 +1021,7 @@ function stCardRender() {
     me = `<div class="me"><div class="nm" style="color:${stHex(s.col)}">${escHtml(s.name)}</div>
       <div class="sub" style="color:${ST_RARITY[s.rar].col}">${ST_RARITY[s.rar].name.toUpperCase()} · LEVEL ${ST.lv}/${ST_MAX_LV}</div>
       <div class="stats"><div>P<b>${P}</b></div><div>S<b>${S}</b></div><div>R<b>${R}</b></div><div>D<b>${D}</b></div></div>
-      <div><b>${escHtml(s.move)}</b> (R) — ${escHtml(s.blurb)}${s.cd ? ' Cooldown ' + (stCd(s) / 1000).toFixed(1) + 's.' : ''}</div>
+      ${s.moves.map((m, i) => `<div style="margin-top:4px"><b>${i ? 'H' : 'R'} · ${escHtml(m.name)}</b> — ${escHtml(m.blurb)}${m.cd ? ' <span style="color:#8a84a0">(' + (stCd(m) / 1000).toFixed(1) + 's)</span>' : ''}</div>`).join('')}
       <div class="bar"><i style="width:${max ? 100 : Math.min(100, ST.ess / cost * 100)}%"></i></div>
       <div style="color:#9a94a8">${max ? 'Max level.' : 'Next level: ' + cost + ' Essence (you have ' + ST.ess + ')'}</div>
       <div class="row">
@@ -827,7 +1082,8 @@ function standKey(k, e) {
     showToast(ST.frag ? 'No arrow yet: ' + ST.frag + '/' + ST_FRAGS + ' fragments. Gather berry bushes (E) for more.' : 'You need a Stone Arrow. Gather berry bushes (E) for Arrow Fragments; five make an arrow.');
     return true;
   }
-  if (k === 'r' && !e.repeat && !catalogOpen && ST.id) { stMove(); return true; }
+  if (k === 'r' && !e.repeat && !catalogOpen && ST.id) { stMove(0); return true; }
+  if (k === 'h' && !e.repeat && ST.id) { stMove(1); return true; }
   return false;
 }
 addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'q' && stHold) stPierceCancel(); });
@@ -901,9 +1157,9 @@ function stRainTick(dt, time) {
 function standWire(payload) {   // from maybeSyncPosition()
   if (!ST.id || !stOut || !bbOutdoors()) return;
   payload.sd = ST.id + '.' + ST.lv;
-  if (Date.now() - stMoveAt < 6000) payload.sm = stMoveAt;
+  if (Date.now() - stMoveAt < 6000) { payload.sm = stMoveAt; payload.sk = stMoveK; if (stMoveQ) payload.sq = stMoveQ; }
 }
-function standRemote(av, sd, sm) {   // from the worldPresence listener
+function standRemote(av, sd, sm, sk, sq) {   // from the worldPresence listener
   const m = typeof sd === 'string' ? /^([a-z]{2})\.(\d{1,2})$/.exec(sd) : null;
   const id = m && ST_BY[m[1]] ? m[1] : '', lv = m ? Math.max(1, Math.min(ST_MAX_LV, Number(m[2]))) : 1;
   let r = av.userData.st;
@@ -917,7 +1173,12 @@ function standRemote(av, sd, sm) {   // from the worldPresence listener
   r.want = true; r.g.userData.lv = lv;
   if (sm && sm !== r.seenSm) {
     r.seenSm = sm;
-    if (Math.abs(Date.now() - sm) < 5000) { r.moveAt = performance.now(); if (id !== 'tw') stFx(ST_BY[id], r, lv, av, false); }
+    if (Math.abs(Date.now() - sm) < 5000) {
+      const k = sk === 1 || sk === 2 ? sk : 0, mv = ST_BY[id].moves[Math.min(k, 1)];
+      const q = Array.isArray(sq) && sq.length === 3 && sq.every(Number.isFinite) ? new THREE.Vector3(sq[0], sq[1], sq[2]) : null;
+      r.moveAt = performance.now(); r.moveDur = k === 2 ? 0.4 : mv.dur; r.movePose = k === 2 ? 'cast' : mv.pose;
+      stFx(ST_BY[id], r, lv, av, false, k, q);
+    }
   }
 }
 
@@ -946,15 +1207,11 @@ function standTick(dt) {
     if (!r.want && r.k < 0.02) { stDispose(r.g); av.userData.st = null; }
   }
   // move effects
-  for (let i = stBirds.length - 1; i >= 0; i--) {
-    const b = stBirds[i]; b.t += dt;
-    const p = b.owner.position, a = b.a0 + b.t * 2.6, R = 2.6 + b.lv * 0.12;
-    b.b.position.set(p.x + Math.cos(a) * R, (p.y || 0) + 3 + Math.sin(b.t * 3) * 0.4, p.z + Math.sin(a) * R);
-    b.b.rotation.y = -a;
-    const flap = Math.sin(b.t * 16) * 0.6; b.wings[0].rotation.z = flap; b.wings[1].rotation.z = -flap;
-    b.b.scale.setScalar(Math.min(1, b.t * 4, (b.dur - b.t) * 3) * (1.3 + b.lv * 0.04));
-    stSpark(b.b.position.x, b.b.position.y, b.b.position.z, (Math.random() - 0.5) * 1.5, -1 - Math.random(), (Math.random() - 0.5) * 1.5, [1, 0.45 + Math.random() * 0.3, 0.1], 0.9);
-    if (b.t >= b.dur) { fwBurst(b.b.position.x, b.b.position.y, b.b.position.z, 60, [1, 0.5, 0.15], 6, 1); scene.remove(b.b); stBirds.splice(i, 1); }
+  for (let i = stFxObjs.length - 1; i >= 0; i--) {
+    const o = stFxObjs[i]; o.t += dt;
+    let done = true;
+    try { done = o.update(o, dt); } catch (e) {}
+    if (done) { scene.remove(o.obj); stFxObjs.splice(i, 1); }
   }
   for (let i = stFlowers.length - 1; i >= 0; i--) {
     const f = stFlowers[i]; f.t += dt;
@@ -962,22 +1219,13 @@ function standTick(dt) {
     f.f.scale.setScalar(Math.max(0.001, s));
     if (f.t >= f.life) { scene.remove(f.f); stFlowers.splice(i, 1); }
   }
-  for (let i = stBombs.length - 1; i >= 0; i--) {
-    const b = stBombs[i]; b.t += dt;
-    b.m.scale.setScalar(3 + Math.sin(b.t * 18) * 0.5); b.m.material.opacity = 0.6 + Math.sin(b.t * 18) * 0.3;
-    if (b.t >= b.fuse) {
-      scene.remove(b.m);
-      fwBurst(b.x, b.y + 1, b.z, 120 + b.lv * 10, [1, 0.5, 0.85], 9, 1.4);
-      fwRocket(b.x, b.z, 0);
-      if (Math.hypot(localPos.x - b.x, localPos.z - b.z) < 40) stSfx('boom');
-      stBombs.splice(i, 1);
-    }
-  }
+  for (const [owner, k] of stKqMarks) if (now - k.at > 30000 || (owner !== stAnchor && !owner.parent)) stKqClear(owner);
   // the HUD line while your Stand is out
   let hud = '';
   if (stLocal && ST.id && stOut && outdoors) {
-    const d = ST_BY[ST.id], left = d.id === 'tw' ? Math.max(0, TS.readyAt - now) : Math.max(0, stReadyAt - now);
-    hud = `<b style="color:${stHex(d.col)}">${escHtml(d.name)}</b> · Lv ${ST.lv} · R ${escHtml(d.move)} ${left > 0 ? Math.ceil(left / 1000) + 's' : '<b style="color:#8dffb0">ready</b>'}`;
+    const d = ST_BY[ST.id];
+    const one = (key, k) => { const left = d.id === 'tw' && k === 0 ? Math.max(0, TS.readyAt - now) : Math.max(0, stReady[k] - now); const nm = d.id === 'kq' && k === 0 && stKqMarks.has(stAnchor) ? 'Detonate' : d.moves[k].name; return key + ' ' + escHtml(nm) + ' ' + (left > 0 ? Math.ceil(left / 1000) + 's' : '<b style="color:#8dffb0">ready</b>'); };
+    hud = `<b style="color:${stHex(d.col)}">${escHtml(d.name)}</b> · Lv ${ST.lv} · ${one('R', 0)} · ${one('H', 1)}`;
   }
   if (hud !== stHudSig) { stHudSig = hud; stEl.hud.innerHTML = hud; stEl.hud.style.display = hud ? 'block' : 'none'; }
 }
@@ -1074,7 +1322,7 @@ function gather() {
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
 document.getElementById('view').appendChild(renderer.domElement);
-window.__dbg = { setST: (o) => { Object.assign(ST, o); stSave(); stOut = true; }, set yaw(v) { yaw = v; }, setZoom: (z) => { camZoom = z; }, fire: () => { stReadyAt = 0; stMove(); } };
+window.__dbg = { setST: (o) => { Object.assign(ST, o); stSave(); stOut = true; }, set yaw(v) { yaw = v; }, setZoom: (z) => { camZoom = z; }, fire: (k = 0) => { stReady[0] = stReady[1] = 0; stMove(k); } };
 const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 let camPitch = 0.32, dragging = false, lx = 0, ly = 0;
@@ -1099,7 +1347,8 @@ addEventListener('blur', () => keys.clear());
 const FR_IDS = ['sp', 'kq', 'ge', 'mr', 'hg'];
 let frIdx = 0, frLv = 5;
 standRemote(friend, FR_IDS[0] + '.' + frLv, 0);
-function castFriend() { standRemote(friend, FR_IDS[frIdx] + '.' + frLv, Date.now()); }
+let frK = 0;
+function castFriend() { const id = FR_IDS[frIdx]; frK = id === 'kq' && frK === 0 ? 2 : frK === 2 ? 1 : (frK + 1) % 2; const k = id === 'kq' ? frK : frK % 2; const q = id === 'kq' && k !== 1 ? [friend.position.x + Math.sin(friend.rotation.y) * 4, 0.05, friend.position.z + Math.cos(friend.rotation.y) * 4] : undefined; standRemote(friend, id + '.' + frLv, Date.now(), k, q); }
 setInterval(castFriend, 9000);
 setInterval(() => { frIdx = (frIdx + 1) % FR_IDS.length; standRemote(friend, FR_IDS[frIdx] + '.' + frLv, 0); }, 27000);
 // the buttons on the side
